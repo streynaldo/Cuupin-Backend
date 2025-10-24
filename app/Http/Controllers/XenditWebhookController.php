@@ -8,33 +8,6 @@ use Illuminate\Support\Facades\Cache;
 
 class XenditWebhookController extends Controller
 {
-    // public function handle(Request $req)
-    // {
-    //     // Verifikasi token dari header
-    //     $token = $req->header('X-Callback-Token');
-    //     abort_unless($token && hash_equals($token, config('services.xendit.callback_token')), 403);
-
-    //     $payload = $req->all();
-    //     Log::info('Xendit webhook', $payload);
-
-    //     // Payments API akan mengirim notifikasi status pembayaran (payment webhooks)
-    //     // Event & struktur bervariasi; ambil payment_request_id + status yang relevan:
-    //     $prId   = data_get($payload, 'data.id') ?? data_get($payload, 'data.payment_request_id');
-    //     $status = data_get($payload, 'data.status') ?? data_get($payload, 'event');
-
-    //     if ($prId && $status) {
-    //         $payment = Payment::where('payment_request_id', $prId)->first();
-    //         if ($payment) {
-    //             $payment->update([
-    //                 'status' => strtoupper($status), // normalisasi
-    //                 'raw'    => $payload,
-    //             ]);
-    //             // TODO: if SUCCEEDED -> fulfill order (dispatch job)
-    //         }
-    //     }
-    //     return response()->json(['ok' => true]);
-    // }
-
     public function handle(Request $r)
     {
         if ($r->header('x-callback-token') !== config('services.xendit.callback_token')) {

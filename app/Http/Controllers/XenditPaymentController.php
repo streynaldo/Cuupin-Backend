@@ -9,31 +9,28 @@ use App\Actions\Xendit\PaymentAction;
 
 class XenditPaymentController extends Controller
 {
-    // GET /test/ewallet?wallet=DANA&amount=15000&order_id=123&phone=0899...
-    public function create(Request $r, PaymentAction $pa)
+    public function createSession(Request $r, PaymentAction $pa)
     {
-        // ambil dari JSON body dulu, kalau kosong baru fallback ke query params
+
         $payload = $r->all();
-        // dd($payload);
 
-        $wallet = strtoupper($payload['wallet'] ?? $r->query('wallet', 'DANA'));
         $order = [
-            'id'     => $payload['order_id'] ?? $r->query('order_id', now()->timestamp),
-            'amount' => (float) ($payload['request_amount'] ?? $payload['amount'] ?? $r->query('amount', 10000)),
-            'phone'  => $payload['channel_properties']['mobile_number'] ?? $payload['phone'] ?? $r->query('phone'),
+            'id'      => (string) $payload['order_id'],
+            'amount'  => (float) ($payload['amount'] ?? $payload['request_amount'] ?? $r->query('amount')),
+            'title'   => $p['title'] ?? $r->query('title'),
+            // items bisa dikirim via JSON body atau query (string JSON)
         ];
+        $res = $pa->createPaymentSession($order);
 
-        $res = $pa->createEwalletPayment($order, $wallet);
-
-        $url = data_get($res, 'actions.mobile_web_checkout_url')
-            ?? data_get($res, 'actions.desktop_web_checkout_url');
-
-        return $url ? redirect()->away($url) : response()->json($res);
+        return response()->json($res);
     }
-
-    public function checkPaymentStatus(PaymentAction $pa, $paymentId)
+    public function cancelSession(PaymentAction $pa, $sessionId){
+        $res = $pa->cancelPaymentSession($sessionId);
+        return response()->json($res);
+    }
+    public function checkSession(PaymentAction $pa, $sessionId)
     {
-        $res = $pa->checkPaymentStatus($paymentId);
+        $res = $pa->checkPaymentSession($sessionId);
         return response()->json($res);
     }
 
@@ -63,7 +60,8 @@ class XenditPaymentController extends Controller
         return response()->json($res);
     }
 
-    public function payout(Request $r, PaymentAction $pa){
+    public function payout(Request $r, PaymentAction $pa)
+    {
         $validated = $r->validate(
             [
                 'channel_code' => 'required|string',

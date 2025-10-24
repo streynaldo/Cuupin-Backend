@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\api\ApiBakeryController;
 use App\Http\Controllers\XenditPaymentController;
 use Illuminate\Support\Facades\Route;
 // use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\XenditWebhookController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\BakeryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -58,12 +60,24 @@ Route::prefix('/xendit')->group(function () {
 });
 
 Route::prefix('v1')->group(function () {
+    // auth
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login',    [AuthController::class, 'login']);
 
+    // public read
+    Route::get('/bakeries', [ApiBakeryController::class, 'index']);
+    Route::get('/bakeries/{bakery}', [ApiBakeryController::class, 'show']);
+
+    // write: login + ability
+    Route::middleware(['auth:sanctum','abilities:bakeries:write'])->group(function () {
+        Route::post('/bakeries', [ApiBakeryController::class, 'store']);
+        Route::put('/bakeries/{bakery}', [ApiBakeryController::class, 'update']);
+        Route::delete('/bakeries/{bakery}', [ApiBakeryController::class, 'destroy']);
+    });
+
+    // other protected
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', fn(Request $r) => $r->user());
-        // … taruh semua endpoint API kamu yang butuh login di sini
     });
 });

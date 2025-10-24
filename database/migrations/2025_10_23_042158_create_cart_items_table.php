@@ -18,6 +18,9 @@ return new class extends Migration
             $table->unsignedInteger('quantity');
             $table->unsignedInteger('subtotal_price');
             $table->timestamps();
+            
+            // Indexes for joins and product lookups within cart
+            $table->index(['cart_id', 'product_id']);
         });
     }
 

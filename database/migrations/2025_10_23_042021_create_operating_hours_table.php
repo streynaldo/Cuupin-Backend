@@ -19,6 +19,8 @@ return new class extends Migration
             $table->boolean('is_closed')->default(false);
             $table->foreignId('bakery_id')->constrained('bakeries')->cascadeOnDelete();
             $table->timestamps();
+
+            $table->index(['bakery_id', 'day_of_the_week']);
         });
     }
 

@@ -19,6 +19,8 @@ return new class extends Migration
             $table->dateTime('discount_start_time');
             $table->dateTime('discount_end_time');
             $table->timestamps();
+            // Indexes to quickly find active discount windows
+            $table->index(['discount_start_time', 'discount_end_time']);
         });
     }
 

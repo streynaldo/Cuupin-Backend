@@ -19,6 +19,8 @@ return new class extends Migration
             $table->unsignedInteger('subtotal_price');
             $table->enum('status', ['purchased', 'refund'])->default('purchased');
             $table->timestamps();
+            // Indexes for common joins and status filtering
+            $table->index(['order_id', 'product_id']);
         });
     }
 

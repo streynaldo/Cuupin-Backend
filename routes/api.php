@@ -67,16 +67,16 @@ Route::prefix('v1')->group(function () {
 
     // public read
     Route::get('/bakeries', [ApiBakeryController::class, 'index']);
-    Route::get('/bakeries/{bakery}', [ApiBakeryController::class, 'show']);
+    Route::get('/bakeries/{id}', [ApiBakeryController::class, 'show']);
 
     Route::get('/products', [ApiProductController::class, 'index']);
-    Route::get('/products/{product}', [ApiProductController::class, 'show']);
+    Route::get('/products/{id}', [ApiProductController::class, 'show']);
 
     // write: login + ability
     Route::middleware(['auth:sanctum', 'abilities:bakeries:write'])->group(function () {
         Route::post('/bakeries', [ApiBakeryController::class, 'store']);
-        Route::put('/bakeries/{bakery}', [ApiBakeryController::class, 'update']);
-        Route::delete('/bakeries/{bakery}', [ApiBakeryController::class, 'destroy']);
+        Route::put('/bakeries/{id}', [ApiBakeryController::class, 'update']);
+        Route::delete('/bakeries/{id}', [ApiBakeryController::class, 'destroy']);
     });
 
     Route::middleware(['auth:sanctum', 'abilities:products:write'])->group(function () {

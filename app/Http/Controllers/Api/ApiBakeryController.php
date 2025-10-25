@@ -58,8 +58,9 @@ class ApiBakeryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Bakery $bakery)
+    public function show(string $id)
     {
+        $bakery = Bakery::findOrFail($id);
         $bakery->load('user:id,name,email');
         return response()->json($bakery);
     }
@@ -67,8 +68,9 @@ class ApiBakeryController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Bakery $bakery)
+    public function update(Request $request, string $id)
     {
+        $bakery = Bakery::findOrFail($id);
         $this->authorizeOwnerOrAdmin($request->user(), $bakery);
 
         $data = $request->validate([
@@ -91,8 +93,9 @@ class ApiBakeryController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, Bakery $bakery)
+    public function destroy(Request $request, string $id)
     {
+        $bakery = Bakery::findOrFail($id);
         $this->authorizeOwnerOrAdmin($request->user(), $bakery);
 
         $bakery->delete();

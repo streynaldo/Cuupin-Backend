@@ -12,10 +12,21 @@ class Bakery extends Model
     protected $fillable = [
         'user_id',
         'name',
-        'address',
         'description',
+        'logo_url',
+        'banner_url',
+        'address',
+        'latitude',
+        'longitude',
+        'contact_info',
+        'is_active',
     ];
 
+    protected $casts = [
+        'is_active' => 'boolean',
+        'latitude'  => 'float',  
+        'longitude' => 'float',
+    ];
     // === Relations ===
     public function user()
     {

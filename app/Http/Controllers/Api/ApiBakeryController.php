@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bakery;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class ApiBakeryController extends Controller
@@ -35,7 +36,23 @@ class ApiBakeryController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'name'         => ['required', 'string', 'max:150'],
+            'description'  => ['nullable', 'string'],
+            'logo_url'     => ['nullable', 'url'],
+            'banner_url'   => ['nullable', 'url'],
+            'address'      => ['nullable', 'string', 'max:255'],
+            'latitude'     => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude'    => ['nullable', 'numeric', 'between:-180,180'],
+            'contact_info' => ['nullable', 'string', 'max:100'],
+            'is_active'    => ['boolean'],
+        ]);
+
+        $data['user_id'] = $request->user()->id;
+
+        $bakery = Bakery::create($data)->load('user:id,name,email');
+
+        return response()->json($bakery, 201);
     }
 
     /**
@@ -43,7 +60,9 @@ class ApiBakeryController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $bakery = Bakery::findOrFail($id);
+        $bakery->load('user:id,name,email');
+        return response()->json($bakery);
     }
 
     /**
@@ -51,14 +70,44 @@ class ApiBakeryController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $bakery = Bakery::findOrFail($id);
+        $this->authorizeOwnerOrAdmin($request->user(), $bakery);
+
+        $data = $request->validate([
+            'name'         => ['sometimes', 'string', 'max:150'],
+            'description'  => ['sometimes', 'nullable', 'string'],
+            'logo_url'     => ['sometimes', 'nullable', 'url'],
+            'banner_url'   => ['sometimes', 'nullable', 'url'],
+            'address'      => ['sometimes', 'nullable', 'string', 'max:255'],
+            'latitude'     => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
+            'longitude'    => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
+            'contact_info' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'is_active'    => ['sometimes', 'boolean'],
+        ]);
+
+        $bakery->update($data);
+
+        return response()->json($bakery->fresh()->load('user:id,name,email'));
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        //
+        $bakery = Bakery::findOrFail($id);
+        $this->authorizeOwnerOrAdmin($request->user(), $bakery);
+
+        $bakery->delete();
+
+        return response()->json(['message' => 'Bakery deleted']);
+    }
+
+    // Helper to authorize owner or admin
+    private function authorizeOwnerOrAdmin(User $user, Bakery $bakery): void
+    {
+        if (!($user->role === 'admin' || $bakery->user_id === $user->id)) {
+            abort(403, 'Forbidden');
+        }
     }
 }

@@ -1,19 +1,29 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bakery;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\Rule;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ApiBakeryController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * GET /bakeries
      */
     public function index(Request $request)
     {
+        $request->validate([
+            'only_active' => ['sometimes', 'boolean'],
+            'user_id'     => ['sometimes', 'integer', 'exists:users,id'],
+            'search'      => ['sometimes', 'string', 'max:100'],
+            'per_page'    => ['sometimes', 'integer', 'min:1', 'max:100'],
+        ]);
+
         $query = Bakery::query()
             ->with('user:id,name,email')
             ->when($request->boolean('only_active'), fn($q) => $q->where('is_active', true))
@@ -28,11 +38,12 @@ class ApiBakeryController extends Controller
             ->orderByDesc('id');
 
         $bakeries = $query->paginate($request->integer('per_page', 10));
+
         return response()->json($bakeries);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * POST /bakeries  (butuh login + ability)
      */
     public function store(Request $request)
     {
@@ -50,27 +61,36 @@ class ApiBakeryController extends Controller
 
         $data['user_id'] = $request->user()->id;
 
-        $bakery = Bakery::create($data)->load('user:id,name,email');
-
-        return response()->json($bakery, 201);
+        try {
+            $bakery = Bakery::create($data)->load('user:id,name,email');
+            return response()->json($bakery, 201);
+        } catch (QueryException $e) {
+            return response()->json(['message' => 'Failed to create bakery'], 500);
+        }
     }
 
     /**
-     * Display the specified resource.
+     * GET /bakeries/{id}
      */
-    public function show(string $id)
+    public function show(int $id)
     {
-        $bakery = Bakery::findOrFail($id);
-        $bakery->load('user:id,name,email');
-        return response()->json($bakery);
+        try {
+            $bakery = Bakery::with('user:id,name,email')->findOrFail($id);
+            return response()->json($bakery);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Bakery not found'], 404);
+        }
     }
 
     /**
-     * Update the specified resource in storage.
+     * PUT /bakeries/{id}  (butuh login + ability)
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, int $id)
     {
-        $bakery = Bakery::findOrFail($id);
+        $bakery = Bakery::find($id);
+        if (! $bakery) {
+            return response()->json(['message' => 'Bakery not found'], 404);
+        }
         $this->authorizeOwnerOrAdmin($request->user(), $bakery);
 
         $data = $request->validate([
@@ -87,26 +107,32 @@ class ApiBakeryController extends Controller
 
         $bakery->update($data);
 
-        return response()->json($bakery->fresh()->load('user:id,name,email'));
+        // fresh() to get updated relations
+        return response()->json([
+            $bakery->fresh()->load('user:id,name,email'),
+            'message' => 'Bakery updated'
+        ], 200);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * DELETE /bakeries/{id}  (butuh login + ability)
      */
-    public function destroy(Request $request, string $id)
+    public function destroy(Request $request, int $id)
     {
-        $bakery = Bakery::findOrFail($id);
+        $bakery = Bakery::findOrFail($id); // auto 404
         $this->authorizeOwnerOrAdmin($request->user(), $bakery);
 
         $bakery->delete();
 
+        // 200 dengan message, atau 204 tanpa body (pilih salah satu)
         return response()->json(['message' => 'Bakery deleted']);
+        // return response()->noContent(); // <- alternatif 204
     }
 
-    // Helper to authorize owner or admin
+    /** Helper: hanya admin atau owner bakery yang boleh write */
     private function authorizeOwnerOrAdmin(User $user, Bakery $bakery): void
     {
-        if (!($user->role === 'admin' || $bakery->user_id === $user->id)) {
+        if (! ($user->role === 'admin' || $bakery->user_id === $user->id)) {
             abort(403, 'Forbidden');
         }
     }

@@ -12,7 +12,9 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'bakery_id',
-        'total_price',
+        'total_purchased_price',
+        'total_refunded_price',
+        'reference_id',
         'status',
     ];
 

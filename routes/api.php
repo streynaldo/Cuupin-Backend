@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\api\ApiBakeryController;
+use App\Http\Controllers\Api\ApiOrderController;
 use App\Http\Controllers\api\ApiProductController;
 use App\Http\Controllers\XenditPaymentController;
 use Illuminate\Support\Facades\Route;
@@ -42,7 +43,7 @@ Route::get('/health', function () {
 // });
 
 
-Route::post('/refunds', [XenditPaymentController::class,'paymentRefund'])->name('payments.refund');
+Route::post('/refunds', [XenditPaymentController::class, 'paymentRefund'])->name('payments.refund');
 Route::get('/balance', [XenditPaymentController::class, 'checkBalance'])->name('payments.balance');
 Route::post('/payouts', [XenditPaymentController::class, 'payout'])->name('payments.payout');
 
@@ -54,6 +55,8 @@ Route::post('/sessions/{sessionId}/cancel', [XenditPaymentController::class, 'ca
 
 Route::get('/payments/success/{id}', [XenditPaymentController::class, 'success'])->name('payments.success');
 Route::get('/payments/failed/{id}',  [XenditPaymentController::class, 'failed'])->name('payments.failed');
+
+Route::post('/order', [ApiOrderController::class, 'store']);
 
 Route::prefix('/xendit')->group(function () {
     Route::post('/webhook', [XenditWebhookController::class, 'handle'])->name('xendit.webhook');
@@ -82,6 +85,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/products', [ApiProductController::class, 'store']);
         Route::put('/products/{id}', [ApiProductController::class, 'update']);
         Route::delete('/products/{id}', [ApiProductController::class, 'destroy']);
+    });
+
+    Route::middleware(['auth:sanctum', 'abilities:order:write'])->group(function () {
+        
     });
 
     // other protected

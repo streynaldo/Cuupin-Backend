@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\api\ApiBakeryController;
+use App\Http\Controllers\Api\ApiOrderController;
 use App\Http\Controllers\XenditPaymentController;
 use Illuminate\Support\Facades\Route;
 // use App\Http\Controllers\PaymentController;
@@ -41,7 +42,7 @@ Route::get('/health', function () {
 // });
 
 
-Route::post('/refunds', [XenditPaymentController::class,'paymentRefund'])->name('payments.refund');
+Route::post('/refunds', [XenditPaymentController::class, 'paymentRefund'])->name('payments.refund');
 Route::get('/balance', [XenditPaymentController::class, 'checkBalance'])->name('payments.balance');
 Route::post('/payouts', [XenditPaymentController::class, 'payout'])->name('payments.payout');
 
@@ -51,8 +52,10 @@ Route::get('/sessions/{sessionId}', [XenditPaymentController::class, 'checkSessi
 Route::post('/sessions/{sessionId}/cancel', [XenditPaymentController::class, 'cancelSession'])->name('payment.session.check');
 
 
-Route::get('/payments/success/{id}', [XenditPaymentController::class,'success'])->name('payments.success');
-Route::get('/payments/failed/{id}',  [XenditPaymentController::class,'failed'])->name('payments.failed');
+Route::get('/payments/success/{id}', [XenditPaymentController::class, 'success'])->name('payments.success');
+Route::get('/payments/failed/{id}',  [XenditPaymentController::class, 'failed'])->name('payments.failed');
+
+Route::post('/order', [ApiOrderController::class, 'store']);
 
 Route::prefix('/xendit')->group(function () {
     Route::post('/webhook', [XenditWebhookController::class, 'handle'])->name('xendit.webhook');
@@ -68,10 +71,14 @@ Route::prefix('v1')->group(function () {
     Route::get('/bakeries/{bakery}', [ApiBakeryController::class, 'show']);
 
     // write: login + ability
-    Route::middleware(['auth:sanctum','abilities:bakeries:write'])->group(function () {
+    Route::middleware(['auth:sanctum', 'abilities:bakeries:write'])->group(function () {
         Route::post('/bakeries', [ApiBakeryController::class, 'store']);
         Route::put('/bakeries/{bakery}', [ApiBakeryController::class, 'update']);
         Route::delete('/bakeries/{bakery}', [ApiBakeryController::class, 'destroy']);
+    });
+
+    Route::middleware(['auth:sanctum', 'abilities:order:write'])->group(function () {
+        
     });
 
     // other protected

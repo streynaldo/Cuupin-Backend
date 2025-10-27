@@ -10,11 +10,14 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
-        'bakery_id',
-        'name',
-        'category',
+        'product_name',
+        'description',
         'price',
-        'stock',
+        'best_before',
+        'image_url',
+        'discount_price',
+        'bakery_id',
+        'discount_id',
     ];
 
     // === Relations ===
@@ -26,5 +29,9 @@ class Product extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItems::class);
+    }
+    public function discountEvent()
+    {
+        return $this->belongsTo(DiscountEvent::class, 'discount_id')->withDefault();
     }
 }

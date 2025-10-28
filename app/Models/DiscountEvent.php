@@ -11,8 +11,11 @@ class DiscountEvent extends Model
     use HasFactory;
 
     protected $fillable = [
-        'discount_name', 'discount', 'discount_photo',
-        'discount_start_time', 'discount_end_time',
+        'discount_name',
+        'discount',
+        'discount_photo',
+        'discount_start_time',
+        'discount_end_time',
     ];
 
     protected $casts = [
@@ -31,7 +34,7 @@ class DiscountEvent extends Model
     {
         $at = $at ?: now();
         return $query->where('discount_start_time', '<=', $at)
-                     ->where('discount_end_time', '>=', $at);
+            ->where('discount_end_time', '>=', $at);
     }
 
     public function isActive(?Carbon $at = null): bool

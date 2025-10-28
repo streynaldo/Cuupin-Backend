@@ -19,6 +19,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('best_before')->nullable();
             $table->string('image_url')->nullable();
             $table->unsignedInteger('discount_price')->nullable();
+            $table->enum('status', ['available', 'not_available'])->default('available');
             $table->foreignId('bakery_id')->constrained('bakeries')->cascadeOnDelete();
             $table->foreignId('discount_id')->nullable()->constrained('discount_events')->nullOnDelete();
             $table->timestamps();

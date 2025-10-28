@@ -17,6 +17,10 @@ class OperatingHour extends Model
         'bakery_id',
     ];
 
+    protected $casts = [
+        'is_closed' => 'boolean',
+    ];
+
     // === RELATIONS ===
     public function bakery()
     {

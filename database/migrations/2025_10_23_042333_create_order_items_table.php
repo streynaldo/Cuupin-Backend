@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('order_id')->constrained('orders')->cascadeOnDelete();
             $table->unsignedInteger('quantity');
             $table->unsignedInteger('subtotal_price');
-            $table->enum('status', ['purchased', 'refund'])->default('purchased');
+            $table->enum('status', ['WAITING','PURCHASED', 'REFUND'])->default('WAITING');
             $table->timestamps();
             // Indexes for common joins and status filtering
             $table->index(['order_id', 'product_id']);

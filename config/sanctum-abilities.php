@@ -8,6 +8,7 @@ return [
         'products:read',
         'products:write',
         'orders:read',
+        'orders:update',
         'orders:manage',
         'wallet:read',
         'wallet:withdraw',

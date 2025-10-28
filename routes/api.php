@@ -56,8 +56,6 @@ Route::post('/sessions/{sessionId}/cancel', [XenditPaymentController::class, 'ca
 Route::get('/payments/success/{id}', [XenditPaymentController::class, 'success'])->name('payments.success');
 Route::get('/payments/failed/{id}',  [XenditPaymentController::class, 'failed'])->name('payments.failed');
 
-Route::post('/order', [ApiOrderController::class, 'store']);
-
 Route::prefix('/xendit')->group(function () {
     Route::post('/webhook', [XenditWebhookController::class, 'handle'])->name('xendit.webhook');
 });
@@ -87,8 +85,13 @@ Route::prefix('v1')->group(function () {
         Route::delete('/products/{id}', [ApiProductController::class, 'destroy']);
     });
 
-    Route::middleware(['auth:sanctum', 'abilities:order:write'])->group(function () {
-        
+    Route::middleware(['auth:sanctum', 'abilities:orders:create,orders:read'])->group(function () {
+        Route::post('/order', [ApiOrderController::class, 'store']);
+        Route::get('/order', [ApiOrderController::class, 'index']);
+    });
+    Route::middleware(['auth:sanctum', 'abilities:orders:update'])->group(function () {
+        Route::patch('/order/{id}', [ApiOrderController::class, 'confirmation']);
+        Route::patch('/order/{id}/pickup', [ApiOrderController::class, 'update']);
     });
 
     // other protected

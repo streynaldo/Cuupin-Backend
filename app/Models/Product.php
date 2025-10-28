@@ -16,6 +16,7 @@ class Product extends Model
         'best_before',
         'image_url',
         'discount_price',
+        'status',
         'bakery_id',
         'discount_id',
     ];

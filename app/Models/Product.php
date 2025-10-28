@@ -34,4 +34,19 @@ class Product extends Model
     {
         return $this->belongsTo(DiscountEvent::class, 'discount_id')->withDefault();
     }
+
+    // helper methods discount price
+    public function applyDiscount(DiscountEvent $event): void
+    {
+        $this->discount_id = $event->id;
+        $this->discount_price = (int) round($this->price * (100 - $event->discount) / 100);
+        $this->save();
+    }
+
+    public function clearDiscount(): void
+    {
+        $this->discount_id = null;
+        $this->discount_price = null;
+        $this->save();
+    }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\api\ApiBakeryController;
+use App\Http\Controllers\api\ApiDiscountEventController;
 use App\Http\Controllers\api\ApiOperatingHourController;
 use App\Http\Controllers\Api\ApiOrderController;
 use App\Http\Controllers\api\ApiProductController;
@@ -77,6 +78,9 @@ Route::prefix('v1')->group(function () {
     // public read products
     Route::get('/products', [ApiProductController::class, 'index']);
     Route::get('/products/{id}', [ApiProductController::class, 'show'])->whereNumber('id');
+    // public read discounts
+    Route::get('/discount-events', [ApiDiscountEventController::class, 'index']);
+    Route::get('/discount-events/{id}', [ApiDiscountEventController::class, 'show'])->whereNumber('id');
 
     // write: login + ability bakeries
     Route::middleware(['auth:sanctum', 'abilities:bakeries:write'])->group(function () {
@@ -87,14 +91,23 @@ Route::prefix('v1')->group(function () {
     // write: login + ability operating hours
     Route::middleware(['auth:sanctum', 'abilities:operating-hours:write'])->group(function () {
         Route::post('/bakeries/{id}/hours', [ApiOperatingHourController::class, 'store'])->whereNumber('id');
-        Route::put('/operating-hours/{id}',     [ApiOperatingHourController::class, 'update'])->whereNumber('id');
-        Route::delete('/operating-hours/{id}',  [ApiOperatingHourController::class, 'destroy'])->whereNumber('id');
+        Route::put('/operating-hours/{id}', [ApiOperatingHourController::class, 'update'])->whereNumber('id');
+        Route::delete('/operating-hours/{id}', [ApiOperatingHourController::class, 'destroy'])->whereNumber('id');
     });
     // write: login + ability products
     Route::middleware(['auth:sanctum', 'abilities:products:write'])->group(function () {
         Route::post('/products', [ApiProductController::class, 'store']);
         Route::put('/products/{id}', [ApiProductController::class, 'update'])->whereNumber('id');
         Route::delete('/products/{id}', [ApiProductController::class, 'destroy'])->whereNumber('id');
+    });
+    // write: login + ability discounts
+    Route::middleware(['auth:sanctum', 'abilities:discounts:write'])->group(function () {
+        Route::post('/discount-events', [ApiDiscountEventController::class, 'store']);
+        Route::put('/discount-events/{id}', [ApiDiscountEventController::class, 'update'])->whereNumber('id');
+        Route::delete('/discount-events/{id}', [ApiDiscountEventController::class, 'destroy'])->whereNumber('id');
+        // additional routes to attach/detach products to/from discount event
+        Route::post('/discount-events/{id}/products', [ApiDiscountEventController::class, 'attachProducts'])->whereNumber('id');
+        Route::delete('/discount-events/{id}/products', [ApiDiscountEventController::class, 'detachProducts'])->whereNumber('id');
     });
 
     Route::middleware(['auth:sanctum', 'abilities:order:write'])->group(function () {});

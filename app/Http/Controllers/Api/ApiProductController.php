@@ -69,7 +69,7 @@ class ApiProductController extends Controller
             return response()->json(['message' => 'discount_price must be less than price'], 422);
         }
 
-        $product = Product::create($data)->load(['bakery','discountEvent']);
+        $product = Product::create($data)->load(['bakery', 'discountEvent']);
 
         return response()->json($product, 201);
     }
@@ -82,8 +82,10 @@ class ApiProductController extends Controller
         $product = Product::with([
             'bakery:id,name,user_id',
             'discountEvent:id,discount_name,discount,discount_start_time,discount_end_time'
-        ])->findOrFail($id);
-
+        ])->find($id);
+        if (! $product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
         $product->load([
             'bakery:id,name,user_id',
             'discountEvent:id,discount_name,discount,discount_start_time,discount_end_time'

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedInteger('total_purchased_price');
             $table->unsignedInteger('total_refunded_price');
-            $table->enum('status', ['WAITING', 'ONPROGRESS', 'CONFIRMED', 'COMPLETED', 'CANCELED'])->default('WAITING');
+            $table->enum('status', ['WAITING', 'ONPROGRESS', 'PAID', 'CONFIRMED', 'COMPLETED', 'CANCELED'])->default('WAITING');
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('bakery_id')->constrained('bakeries')->cascadeOnDelete();
             $table->timestamps();

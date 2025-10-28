@@ -10,6 +10,8 @@ return [
         'operating-hours:write',
         'orders:read',
         'orders:write',
+        'orders:update',
+        'orders:manage',
         'wallet:read',
         'wallet:withdraw',
         'discounts:write',

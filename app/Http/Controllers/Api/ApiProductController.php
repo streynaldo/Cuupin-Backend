@@ -14,35 +14,20 @@ class ApiProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = Product::query()
-            ->with([
-                'bakery:id,name,user_id',
-                'discountEvent:id,discount_name,discount,discount_start_time,discount_end_time'
-            ])
-            ->when(
-                $request->filled('bakery_id'),
-                fn($q) =>
-                $q->where('bakery_id', (int) $request->bakery_id)
-            )
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $s = trim($request->search);
-                $q->where(function ($qq) use ($s) {
-                    $qq->where('product_name', 'like', "%{$s}%")
-                        ->orWhere('description', 'like', "%{$s}%");
-                });
-            })
-            ->when($request->has('has_discount'), function ($q) use ($request) {
-                $v = filter_var($request->has_discount, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-                if ($v === true)  $q->whereNotNull('discount_id');
-                if ($v === false) $q->whereNull('discount_id');
-            })
-            ->orderByDesc('id');
+        $products = Product::with([
+            'bakery:id,name,user_id',
+            'discountEvent:id,discount_name,discount,discount_start_time,discount_end_time'
+        ])
+            ->orderByDesc('id')
+            ->get();
 
-        $products = $query->paginate($request->integer('per_page', 10));
-
-        return response()->json($products);
+        return response()->json([
+            'success' => true,
+            'message' => 'Product list retrieved successfully',
+            'data'    => $products
+        ], 200);
     }
 
     /**

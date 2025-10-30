@@ -15,31 +15,17 @@ class ApiBakeryController extends Controller
     /**
      * GET /bakeries
      */
-    public function index(Request $request)
+    public function index()
     {
-        $request->validate([
-            'only_active' => ['sometimes', 'boolean'],
-            'user_id'     => ['sometimes', 'integer', 'exists:users,id'],
-            'search'      => ['sometimes', 'string', 'max:100'],
-            'per_page'    => ['sometimes', 'integer', 'min:1', 'max:100'],
-        ]);
+        $bakeries = Bakery::with('user:id,name,email')
+            ->orderByDesc('id')
+            ->get();
 
-        $query = Bakery::query()
-            ->with('user:id,name,email')
-            ->when($request->boolean('only_active'), fn($q) => $q->where('is_active', true))
-            ->when($request->filled('user_id'), fn($q) => $q->where('user_id', (int) $request->user_id))
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $s = trim($request->search);
-                $q->where(function ($qq) use ($s) {
-                    $qq->where('name', 'like', "%{$s}%")
-                        ->orWhere('address', 'like', "%{$s}%");
-                });
-            })
-            ->orderByDesc('id');
-
-        $bakeries = $query->paginate($request->integer('per_page', 10));
-
-        return response()->json($bakeries);
+        return response()->json([
+            'success' => true,
+            'message' => 'Bakery list retrieved successfully',
+            'data'    => $bakeries
+        ], 200);
     }
 
     /**

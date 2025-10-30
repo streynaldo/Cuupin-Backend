@@ -83,8 +83,8 @@ Route::prefix('v1')->group(function () {
 
     // read: login + ability wallet
     Route::middleware(['auth:sanctum', 'abilities:wallet:read'])->group(function () {
-        Route::get('/v1/bakeries/{id}/wallet', [ApiBakeryWalletController::class, 'show'])->whereNumber('id');
-        Route::get('/v1/bakeries/{id}/wallet/transactions', [ApiBakeryWalletController::class, 'transactions'])->whereNumber('id');
+        Route::get('/bakeries/{id}/wallet', [ApiBakeryWalletController::class, 'show'])->whereNumber('id');
+        Route::get('/bakeries/{id}/wallet/transactions', [ApiBakeryWalletController::class, 'transactions'])->whereNumber('id');
     });
 
     // write: login + ability bakeries
@@ -131,7 +131,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/me', fn(Request $r) => $r->user());
         });
     });
-    
+
     Route::middleware(['auth:sanctum', 'abilities:orders:create,orders:read'])->group(function () {
         Route::post('/order', [ApiOrderController::class, 'store']);
         Route::get('/order', [ApiOrderController::class, 'index']);

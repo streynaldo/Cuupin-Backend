@@ -13,24 +13,17 @@ class ApiDiscountEventController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = DiscountEvent::query()
-            ->withCount('products')
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $s = trim($request->string('search'));
-                $q->where('discount_name', 'like', "%{$s}%");
-            })
-            ->when($request->boolean('active'), function ($q) {
-                $now = Carbon::now();
-                $q->where('discount_start_time', '<=', $now)
-                    ->where('discount_end_time', '>=', $now);
-            })
-            ->orderByDesc('discount_start_time');
+        $rows = DiscountEvent::withCount('products')
+            ->orderByDesc('discount_start_time')
+            ->get();
 
-        $rows = $query->paginate($request->integer('per_page', 10));
-
-        return response()->json($rows);
+        return response()->json([
+            'success' => true,
+            'message' => 'Discount events retrieved successfully',
+            'data'    => $rows
+        ], 200);
     }
 
     /**

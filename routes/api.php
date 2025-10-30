@@ -141,4 +141,4 @@ Route::prefix('v1')->group(function () {
         Route::patch('/order/{id}/pickup', [ApiOrderController::class, 'update']);
     });
 });
-});
+

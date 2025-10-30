@@ -15,11 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('bakery_wallet_id')->constrained('bakery_wallets')->cascadeOnDelete();
             $table->integer('amount');
-            $table->enum('type', ['deposit', 'withdraw'])->default('deposit');
-            $table->string('description')->nullable();
             $table->timestamps();
-            // Indexes to support history queries and filtering by type
-            $table->index(['bakery_wallet_id', 'type']);
         });
     }
 

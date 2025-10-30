@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             OperatingHourSeeder::class,
             DiscountEventSeeder::class,
+            BakeryWalletSeeder::class,
         ]);
     }
 }

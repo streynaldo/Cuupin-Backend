@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\api\ApiBakeryController;
+use App\Http\Controllers\api\ApiBakeryWalletController;
 use App\Http\Controllers\api\ApiDiscountEventController;
 use App\Http\Controllers\api\ApiOperatingHourController;
 use App\Http\Controllers\Api\ApiOrderController;
@@ -80,6 +81,12 @@ Route::prefix('v1')->group(function () {
     Route::get('/discount-events', [ApiDiscountEventController::class, 'index']);
     Route::get('/discount-events/{id}', [ApiDiscountEventController::class, 'show'])->whereNumber('id');
 
+    // read: login + ability wallet
+    Route::middleware(['auth:sanctum', 'abilities:wallet:read'])->group(function () {
+        Route::get('/v1/bakeries/{id}/wallet', [ApiBakeryWalletController::class, 'show'])->whereNumber('id');
+        Route::get('/v1/bakeries/{id}/wallet/transactions', [ApiBakeryWalletController::class, 'transactions'])->whereNumber('id');
+    });
+
     // write: login + ability bakeries
     Route::middleware(['auth:sanctum', 'abilities:bakeries:write'])->group(function () {
         Route::post('/bakeries', [ApiBakeryController::class, 'store']);
@@ -107,6 +114,15 @@ Route::prefix('v1')->group(function () {
         Route::post('/discount-events/{id}/products', [ApiDiscountEventController::class, 'attachProducts'])->whereNumber('id');
         Route::delete('/discount-events/{id}/products', [ApiDiscountEventController::class, 'detachProducts'])->whereNumber('id');
 
+        Route::middleware(['auth:sanctum', 'abilities:orders:create,orders:read'])->group(function () {
+            Route::post('/order', [ApiOrderController::class, 'store']);
+            Route::get('/order', [ApiOrderController::class, 'index']);
+        });
+        Route::middleware(['auth:sanctum', 'abilities:orders:update'])->group(function () {
+            Route::patch('/order/{id}', [ApiOrderController::class, 'confirmation']);
+            Route::patch('/order/{id}/pickup', [ApiOrderController::class, 'update']);
+        });
+
         Route::middleware(['auth:sanctum', 'abilities:order:write'])->group(function () {});
 
         // other protected
@@ -124,4 +140,5 @@ Route::prefix('v1')->group(function () {
         Route::patch('/order/{id}', [ApiOrderController::class, 'confirmation']);
         Route::patch('/order/{id}/pickup', [ApiOrderController::class, 'update']);
     });
+});
 });

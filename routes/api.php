@@ -53,7 +53,7 @@ Route::post('/payouts', [XenditPaymentController::class, 'payout'])->name('payme
 
 Route::post('/sessions', [XenditPaymentController::class, 'createSession'])->name('payment.session.create');
 Route::get('/sessions/{sessionId}', [XenditPaymentController::class, 'checkSession'])->name('payment.session.check');
-Route::post('/sessions/{sessionId}/cancel', [XenditPaymentController::class, 'cancelSession'])->name('payment.session.check');
+Route::post('/sessions/{sessionId}/cancel', [XenditPaymentController::class, 'cancelSession'])->name('payment.session.cancel');
 
 
 Route::get('/payments/success/{id}', [XenditPaymentController::class, 'success'])->name('payments.success');

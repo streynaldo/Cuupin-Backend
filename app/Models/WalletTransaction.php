@@ -12,13 +12,10 @@ class WalletTransaction extends Model
     protected $fillable = [
         'bakery_wallet_id',
         'amount',
-        'type',
-        'description',
     ];
 
-    // === Relations ===
     public function wallet()
     {
-        return $this->belongsTo(BakeryWallet::class);
+        return $this->belongsTo(BakeryWallet::class, 'bakery_wallet_id');
     }
 }

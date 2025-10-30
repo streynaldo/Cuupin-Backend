@@ -1,11 +1,11 @@
 <?php
 
-use App\Http\Controllers\api\ApiBakeryController;
-use App\Http\Controllers\api\ApiBakeryWalletController;
-use App\Http\Controllers\api\ApiDiscountEventController;
-use App\Http\Controllers\api\ApiOperatingHourController;
+use App\Http\Controllers\Api\ApiBakeryController;
+use App\Http\Controllers\Api\ApiBakeryWalletController;
+use App\Http\Controllers\Api\ApiDiscountEventController;
+use App\Http\Controllers\Api\ApiOperatingHourController;
 use App\Http\Controllers\Api\ApiOrderController;
-use App\Http\Controllers\api\ApiProductController;
+use App\Http\Controllers\Api\ApiProductController;
 use App\Http\Controllers\XenditPaymentController;
 use Illuminate\Support\Facades\Route;
 // use App\Http\Controllers\PaymentController;

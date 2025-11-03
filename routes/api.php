@@ -124,14 +124,15 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::middleware(['auth:sanctum', 'abilities:order:write'])->group(function () {});
-
-        // other protected
-        Route::middleware('auth:sanctum')->group(function () {
-            Route::post('/auth/logout', [AuthController::class, 'logout']);
-            Route::get('/me', fn(Request $r) => $r->user());
-        });
     });
-    
+
+
+    // other protected
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/auth/logout', [AuthController::class, 'logout']);
+        Route::get('/me', fn(Request $r) => $r->user());
+    });
+
     Route::middleware(['auth:sanctum', 'abilities:orders:create,orders:read'])->group(function () {
         Route::post('/order', [ApiOrderController::class, 'store']);
         Route::get('/order', [ApiOrderController::class, 'index']);

@@ -135,7 +135,8 @@ Route::prefix('v1')->group(function () {
 
     // other protected
     Route::middleware('auth:sanctum')->group(function () {
+        Route::put('/auth/user', [AuthController::class, 'update']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
-        Route::get('/me', fn(Request $r) => $r->user());
+        Route::get('/user', fn(Request $r) => $r->user());
     });
 });

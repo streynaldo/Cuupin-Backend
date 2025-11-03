@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -61,6 +62,51 @@ class AuthController extends Controller
             'user'      => $user,
             'role'      => $user->role,
             'abilities' => $abilities,
+        ], 200);
+    }
+
+    public function update(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $data = $request->validate([
+            'name' => ['sometimes', 'string', 'max:100'],
+            'current_password' => ['required_with:password', 'current_password'],
+            'password' => [
+                'sometimes',
+                'confirmed',
+            ],
+        ]);
+
+        // Build field yang akan diupdate
+        $updates = [];
+
+        if (array_key_exists('name', $data)) {
+            $updates['name'] = $data['name'];
+        }
+
+        if (array_key_exists('password', $data)) {
+            $updates['password'] = Hash::make($data['password']);
+        }
+
+        // Jika tidak ada perubahan
+        if (empty($updates)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'No changes',
+                'data'    => $user->only(['id', 'name', 'email', 'role']),
+            ], 200);
+        }
+
+        $user->fill($updates)->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully',
+            'data'    => $user->fresh()->only(['id', 'name', 'email', 'role']),
         ], 200);
     }
 

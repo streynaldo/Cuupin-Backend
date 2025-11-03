@@ -83,8 +83,8 @@ Route::prefix('v1')->group(function () {
 
     // read: login + ability wallet
     Route::middleware(['auth:sanctum', 'abilities:wallet:read'])->group(function () {
-        Route::get('/v1/bakeries/{id}/wallet', [ApiBakeryWalletController::class, 'show'])->whereNumber('id');
-        Route::get('/v1/bakeries/{id}/wallet/transactions', [ApiBakeryWalletController::class, 'transactions'])->whereNumber('id');
+        Route::get('/bakeries/{id}/wallet', [ApiBakeryWalletController::class, 'show'])->whereNumber('id');
+        Route::get('/bakeries/{id}/wallet/transactions', [ApiBakeryWalletController::class, 'transactions'])->whereNumber('id');
     });
 
     // write: login + ability bakeries
@@ -113,6 +113,7 @@ Route::prefix('v1')->group(function () {
         // additional routes to attach/detach products to/from discount event
         Route::post('/discount-events/{id}/products', [ApiDiscountEventController::class, 'attachProducts'])->whereNumber('id');
         Route::delete('/discount-events/{id}/products', [ApiDiscountEventController::class, 'detachProducts'])->whereNumber('id');
+    });
 
         Route::middleware(['auth:sanctum', 'abilities:orders:create,orders:read'])->group(function () {
             Route::post('/order', [ApiOrderController::class, 'store']);
@@ -141,5 +142,11 @@ Route::prefix('v1')->group(function () {
         Route::patch('/order/{id}', [ApiOrderController::class, 'confirmation']);
         Route::patch('/order/{id}/pickup', [ApiOrderController::class, 'update']);
     });
-});
 
+    // other protected
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::put('/auth/user', [AuthController::class, 'update']);
+        Route::post('/auth/logout', [AuthController::class, 'logout']);
+        Route::get('/user', fn(Request $r) => $r->user());
+    });
+});

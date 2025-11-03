@@ -26,9 +26,11 @@ class ApiOperatingHourController extends Controller
             ->get();
 
         return response()->json([
+            'success' => true,
+            'message' => 'Operating hours retrieved successfully',
             'bakery' => $bakery->only(['id', 'name']),
             'hours'  => $hours,
-        ]);
+        ], 200);
     }
 
     /**

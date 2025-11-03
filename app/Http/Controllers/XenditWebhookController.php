@@ -2,43 +2,100 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 
 class XenditWebhookController extends Controller
 {
     public function handle(Request $r)
     {
+        // 1) Verifikasi token
         if ($r->header('x-callback-token') !== config('services.xendit.callback_token')) {
             return response()->json(['error' => 'unauthorized'], 401);
         }
 
-        $event = (string) $r->input('event', '');
+        // 2) Ambil event & data
+        $event = (string) ($r->input('event') ?? $r->input('type') ?? '');
         $data  = (array) $r->input('data', []);
 
-        // bikin key idempotensi sederhana: event + id unik dari payload
-        $keyParts = [
+        // (opsional) log sekilas
+        Log::info('xendit.webhook.received', ['event' => $event, 'status' => $data['status'] ?? null]);
+
+        // 3) Idempotensi sederhana
+        $key = implode(':', [
             'xendit',
-            $event,
-            $data['id'] ?? $data['payment_request_id'] ?? $data['reference_id'] ?? sha1($r->getContent()),
-        ];
-        $key = implode(':', $keyParts);
-
-        // Cache::add -> hanya true jika key belum ada
+            $event ?: 'unknown',
+            $data['payment_session_id'] ?? $data['payment_request_id'] ?? $data['id'] ?? sha1($r->getContent()),
+        ]);
         if (!Cache::add($key, 1, now()->addMinutes(30))) {
-            return response()->json(['ok' => true]); // duplikat, langsung ACK
+            // return response()->json(['ok' => true]); // duplikat
+            // dd('here');
         }
 
-        // … lanjut proses langsung (tanpa job)
-        if (str_starts_with($event, 'payment.')) {
-            // update order…
-        } elseif (str_starts_with($event, 'refund.')) {
-            // update refund…
-        } elseif (str_starts_with($event, 'payout.') || str_starts_with($event, 'disbursement.')) {
-            // update payout…
+        // 4) Tangani event payment_session.completed (persis)
+        if ($event === 'payment_session.completed') {
+            $referenceId = $data['reference_id'] ?? null;
+            $status      = strtoupper((string) ($data['status'] ?? ''));
+
+            if (!$referenceId) {
+                Log::warning('No reference_id in payload', ['data' => $data]);
+                return response()->json(['status' => 'no reference_id'], 402);
+            }
+
+            $order = Order::where('reference_id', $referenceId)->first();
+            if (!$order) {
+                Log::warning('Order not found', ['reference_id' => $referenceId]);
+                return response()->json(['status' => 'order not found'], 402);
+            }
+
+            if (in_array($status, ['COMPLETED', 'SUCCEEDED', 'PAID', 'CAPTURED'])) {
+                $order->status = 'PAID';
+                $order->save();
+                Log::info('Order marked PAID', ['order_id' => $order->id, 'reference_id' => $referenceId]);
+            } else {
+                Log::info('Payment completed event with non-success status', ['status' => $status]);
+            }
+
+            return response()->json([
+                'status' => $status,
+                'order' => $order
+            ]);
         }
 
-        return response()->json(['ok' => true]);
+        // 5) Event lain (refund / payout / dsb) tinggal tambahkan disini
+        if (str_starts_with($event, 'refund.succeeded')) {
+            $referenceId = $data['reference_id'] ?? null;
+            $status      = strtoupper((string) ($data['status'] ?? ''));
+
+            $order = Order::where('reference_id', $referenceId)->first();
+            if (!$order) {
+                Log::warning('Order not found', ['reference_id' => $referenceId]);
+                return response()->json(['status' => 'order not found'], 402);
+            }
+
+            if (in_array($status, ['COMPLETED', 'SUCCEEDED', 'PAID', 'CAPTURED'])) {
+                if($order->total_purchased_price == $order->total_refunded_price){
+                    $order->status = 'CANCELLED';
+                }elseif($order->total_refunded_price < $order->total_purchased_price){
+                    $order->status = 'CONFIRMED';
+                }
+                $order->save();
+                Log::info('Order marked PAID', ['order_id' => $order->id, 'reference_id' => $referenceId]);
+            } else {
+                Log::info('Payment completed event with non-success status', ['status' => $status]);
+            }
+
+            return response()->json(['status' => $order->status, 'order' => $order], 200);
+        }
+        if (str_starts_with($event, 'payout.') || str_starts_with($event, 'disbursement.')) {
+            // handle payout/disbursement…
+            return response()->json(['ok' => true]);
+        }
+
+        Log::info('Unhandled Xendit event', ['event' => $event]);
+        return response()->json(['status' => 'Walawee']);
     }
 }

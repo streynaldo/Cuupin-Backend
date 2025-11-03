@@ -2,24 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Xendit\CheckPaymentStatus;
 use Illuminate\Http\Request;
-use App\Actions\Xendit\CreateEwalletPayment;
 use App\Actions\Xendit\PaymentAction;
 
 class XenditPaymentController extends Controller
 {
     public function createSession(Request $r, PaymentAction $pa)
     {
+        // dd($r);
+        $validated = $r->validate([
+            'reference_id' => 'required|string',
+            'amount' => 'numeric|min:0',
+        ]);
 
-        $payload = $r->all();
+        $payload = $validated;
+        // dd($payload);
 
         $order = [
-            'id'      => (string) $payload['order_id'],
+            'reference_id'      => (string) $payload['reference_id'],
             'amount'  => (float) ($payload['amount'] ?? $payload['request_amount'] ?? $r->query('amount')),
-            'title'   => $p['title'] ?? $r->query('title'),
+            'title'   => 'Pembayaran #' . $payload['reference_id'],
             // items bisa dikirim via JSON body atau query (string JSON)
         ];
+
         $res = $pa->createPaymentSession($order);
 
         return response()->json($res);
@@ -45,7 +50,7 @@ class XenditPaymentController extends Controller
             'amount'             => $amount,
             'currency'           => 'IDR',
             'reason'             => $reason,
-            'reference_id'       => 'REFUND-' . ($r->input('order_id') ?? uniqid()),
+            'reference_id'       => $r->input('reference_id'),
         ]);
 
         return response()->json($res);

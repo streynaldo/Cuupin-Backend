@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Order;
-use App\Models\OrderItems;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use App\Models\Bakery;
 use App\Models\Product;
+use App\Models\OrderItems;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class ApiOrderController extends Controller
 {
@@ -21,9 +22,6 @@ class ApiOrderController extends Controller
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
-
-        $perPage = min(max((int) $request->query('per_page', 10), 1), 100);
-        $withItems = filter_var($request->query('with_items', true), FILTER_VALIDATE_BOOLEAN);
 
         $query = Order::where('user_id', $user->id)
             ->with(['items', 'bakery'])
@@ -44,7 +42,6 @@ class ApiOrderController extends Controller
     {
         $validated = $request->validate([
             'bakery_id' => 'required|exists:bakeries,id',
-
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id', // sesuaikan table produk jika berbeda
             'items.*.quantity' => 'required|integer|min:1',
@@ -53,18 +50,21 @@ class ApiOrderController extends Controller
         // $validated = $request->all();
         $user = $request->user(); // Sanctum
 
-        // Hitung total dari items (subtotal_price sudah per-line)
-        // $computedTotal = round(
-        //     collect($validated['items'])->sum(fn($i) => (float) $i['subtotal_price']),
-        //     2
-        // );
+        $queueCheck = Order::where('status', 'ONPROGRESS')->count();
+        $waiting = $queueCheck >=5;
 
+        $referenceId = 'CPN-' . Str::upper(Str::random(5));
+        while (Order::where('reference_id', $referenceId)->exists()) {
+            $referenceId = 'CPN-' . Str::upper(Str::random(5));
+        }
 
         $order = Order::create([
             'user_id' => $user->id,
             'bakery_id' => $validated['bakery_id'],
             'total_purchased_price' => 0,
             'total_refunded_price' => 0,
+            'reference_id' => $referenceId,
+            'status' => $waiting ? 'WAITING' : 'ONPROGRESS'
         ]);
 
         $itemsPayload = collect($validated['items'])->map(fn($i) => [
@@ -74,6 +74,8 @@ class ApiOrderController extends Controller
         ])->all();
 
         // $order->items()->createMany($itemsPayload);
+        $data = Order::findOrFail($order->id);
+        // dd($data);
         foreach ($itemsPayload as $item) {
             $product = Product::findOrFail($item['product_id']);
             $item = OrderItems::create([
@@ -83,12 +85,15 @@ class ApiOrderController extends Controller
                 'subtotal_price' => ($product->price * $item['quantity']),
                 'status' => $item['status'],
             ]);
-            $order->total_purchased_price += $item->subtotal_price;
+            $data->total_purchased_price += $item->subtotal_price;
         }
+        $data->save();
+        // dd($data);
+
 
         return response()->json([
             'message' => 'Order created',
-            'order' => $order,
+            'order' => $data,
         ], 201);
     }
 
@@ -147,6 +152,7 @@ class ApiOrderController extends Controller
 
         if ($order->status == 'PAID') {
             $canceled = true;
+            $totalRefundedPrice = 0;
             foreach ($order->items as $item) {
                 if ($item->status == 'WAITING') {
                     // TAMBAH CHECKER KALO PRODUK TERNYATA SUDAH HABIS
@@ -164,6 +170,7 @@ class ApiOrderController extends Controller
                                     'subtotal_price' => ($item->quantity - $updatedItems['quantity']) * $product->discount_price,
                                     'status' => 'REFUND',
                                 ]);
+                                $totalRefundedPrice += ($item->quantity - $updatedItems['quantity']) * $product->discount_price;
                                 $item->quantity = $updatedItems['quantity'];
                                 $item->status = 'PURCHASED';
                                 $item->subtotal_price = $item->quantity * $product->discount_price;
@@ -185,6 +192,7 @@ class ApiOrderController extends Controller
                     }
                 }
             }
+            $order->total_refunded_price = $totalRefundedPrice;
 
             if ($canceled) {
                 $order->status = 'CANCELED';
@@ -197,7 +205,25 @@ class ApiOrderController extends Controller
         return response()->json([
             'message' => 'Status Changed',
             'order' => $order
-        ]);
+        ], 200);
+    }
+
+    public function cancellation(string $id)
+    {
+        $order = Order::findOrFail($id);
+        if ($order->status == 'ONPROGRESS') {
+            $order->status == 'CANCELLED';
+            $order->save();
+        } else {
+            return response()->json([
+                'message' => 'Cannot cancel the order'
+            ], 402);
+        }
+
+        return response()->json([
+            'message' => 'Order Cancelled',
+            'order' => $order
+        ], 200);
     }
 
     /**

@@ -8,14 +8,14 @@ class PaymentAction
 {
     public function createPaymentSession(array $order){
         $payload = [
-            'reference_id'           => 'INV-' . $order['id'],
+            'reference_id'           => $order['reference_id'],
             'session_type'          => "PAY",
             'amount'                => (int) round($order['amount']),
             'currency'              => 'IDR',
             'mode'                  => "PAYMENT_LINK",
             "allowed_payment_channels" => ["OVO", "SHOPEEPAY", "DANA"],
             'country'               => "ID",
-            'description'           => $order['title'] ?? 'Pembayaran Order #' . $order['id'],
+            'description'           => 'Pembayaran Order #' . $order['reference_id'],
         ];
 
         return app(Xendit::class)->post('/sessions', $payload);

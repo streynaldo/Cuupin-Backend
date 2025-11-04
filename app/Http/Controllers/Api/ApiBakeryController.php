@@ -91,7 +91,7 @@ class ApiBakeryController extends Controller
 
         $bakery = Bakery::where('user_id', $user->id)->with('orders')->first();
 
-        return response()->json(['message' => 'Success', 'bakery' => $bakery],200);
+        return response()->json(['message' => 'Success', $bakery],200);
     }
 
     // app/Http/Controllers/Api/ApiBakeryController.php

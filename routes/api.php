@@ -81,6 +81,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/discount-events', [ApiDiscountEventController::class, 'index']);
     Route::get('/discount-events/{id}', [ApiDiscountEventController::class, 'show'])->whereNumber('id');
 
+    Route::middleware(['auth:sanctum', 'abilities:bakeries:read'])->group(function (){
+        Route::get('/bakerybyid', [ApiBakeryController::class, 'getBakeryByUserId']);
+    });
+
     // read: login + ability wallet
     Route::middleware(['auth:sanctum', 'abilities:wallet:read'])->group(function () {
         Route::get('/bakeries/{id}/wallet', [ApiBakeryWalletController::class, 'show'])->whereNumber('id');

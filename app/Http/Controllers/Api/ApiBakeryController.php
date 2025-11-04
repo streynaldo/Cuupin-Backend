@@ -82,6 +82,18 @@ class ApiBakeryController extends Controller
         }
     }
 
+    public function getBakeryByUserId(Request $request){
+        $user = $request->user(); // Sanctum
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $bakery = Bakery::where('user_id', $user->id)->with('orders')->first();
+
+        return response()->json(['message' => 'Success', 'bakery' => $bakery],200);
+    }
+
     // app/Http/Controllers/Api/ApiBakeryController.php
     public function activate(Request $request, $id)
     {

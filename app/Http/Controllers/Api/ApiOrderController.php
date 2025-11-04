@@ -52,7 +52,7 @@ class ApiOrderController extends Controller
         $user = $request->user(); // Sanctum
 
         $queueCheck = Order::where('status', 'ONPROGRESS')->count();
-        $waiting = $queueCheck >=5;
+        $waiting = $queueCheck >= 5;
 
         $referenceId = 'CPN-' . Str::upper(Str::random(5));
         while (Order::where('reference_id', $referenceId)->exists()) {
@@ -121,7 +121,7 @@ class ApiOrderController extends Controller
     {
         $user = $request->user();
         $order = Order::with('items')->findOrFail($id);
-        
+
         if ($order->bakery->user_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
@@ -207,6 +207,13 @@ class ApiOrderController extends Controller
                 $order->status = 'CONFIRMED';
             }
             $order->save();
+
+            $waitingOrder = Order::where('status', 'WAITING')
+                ->oldest()   // default: created_at ASC
+                ->first();
+            
+            $waitingOrder->status = 'ONPROGRESS';
+            $waitingOrder->save();
         }
 
         return response()->json([

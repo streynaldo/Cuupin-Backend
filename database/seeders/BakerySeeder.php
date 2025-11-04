@@ -33,6 +33,7 @@ class BakerySeeder extends Seeder
                 'latitude'    => -7.2575,
                 'longitude'   => 112.7521,
                 'contact_info'=> '0812-3456-7890',
+                'discount_status'=> 'inactive',
                 'is_active'   => true,
             ],
             [
@@ -45,6 +46,7 @@ class BakerySeeder extends Seeder
                 'latitude'    => -6.9147,
                 'longitude'   => 107.6098,
                 'contact_info'=> '0813-9988-1122',
+                'discount_status'=> 'inactive',
                 'is_active'   => true,
             ],
             [
@@ -57,6 +59,7 @@ class BakerySeeder extends Seeder
                 'latitude'    => -6.2088,
                 'longitude'   => 106.8456,
                 'contact_info'=> '0878-1122-3344',
+                'discount_status'=> 'inactive',
                 'is_active'   => false,
             ],
         ];

@@ -60,15 +60,7 @@ class ApiBakeryWalletController extends Controller
     {
         //
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
-
+    
     // Helper method to authorize user
     private function authorizeOwnerOrAdmin(User $user, Bakery $bakery): void
     {

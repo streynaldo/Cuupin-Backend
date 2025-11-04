@@ -19,12 +19,14 @@ class Bakery extends Model
         'latitude',
         'longitude',
         'contact_info',
+        'discount_status',
         'is_active',
     ];
 
     protected $casts = [
+        'discount_status' => 'string',
         'is_active' => 'boolean',
-        'latitude'  => 'float',  
+        'latitude'  => 'float',
         'longitude' => 'float',
     ];
     // === Relations ===

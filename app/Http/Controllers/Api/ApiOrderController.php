@@ -9,6 +9,7 @@ use App\Models\OrderItems;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\BakeryWallet;
 
 class ApiOrderController extends Controller
 {
@@ -120,13 +121,19 @@ class ApiOrderController extends Controller
     {
         $user = $request->user();
         $order = Order::with('items')->findOrFail($id);
+        
         if ($order->bakery->user_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         if ($order->status == 'CONFIRMED') {
-            $order->status == 'COMPLETED';
+            $order->status = 'COMPLETED';
             $order->save();
+
+            $wallet = BakeryWallet::where('bakery_id', $order->bakery_id)->first();
+            $wallet->total_earned = $order->total_purchased_price - $order->total_refunded_price;
+            $wallet->total_wallet = $order->total_purchased_price - $order->total_refunded_price;
+            $wallet->save();
 
             return response()->json(['message' => 'Order berhasil diambil', 'data' => $order]);
         } else {
@@ -195,7 +202,7 @@ class ApiOrderController extends Controller
             $order->total_refunded_price = $totalRefundedPrice;
 
             if ($canceled) {
-                $order->status = 'CANCELED';
+                $order->status = 'CANCELLED';
             } else {
                 $order->status = 'CONFIRMED';
             }

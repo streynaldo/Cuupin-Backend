@@ -2,11 +2,13 @@
 // app/Actions/Xendit/CreateEwalletPayment.php
 namespace App\Actions\Xendit;
 
+use Illuminate\Support\Carbon;
 use App\Services\Payments\Xendit;
 
 class PaymentAction
 {
-    public function createPaymentSession(array $order){
+    public function createPaymentSession(array $order)
+    {
         $payload = [
             'reference_id'           => $order['reference_id'],
             'session_type'          => "PAY",
@@ -15,16 +17,19 @@ class PaymentAction
             'mode'                  => "PAYMENT_LINK",
             "allowed_payment_channels" => ["OVO", "SHOPEEPAY", "DANA"],
             'country'               => "ID",
+            'expires_at'            => Carbon::now('UTC')->addMinutes(11)->format('Y-m-d\TH:i:s\Z'),
             'description'           => 'Pembayaran Order #' . $order['reference_id'],
         ];
 
         return app(Xendit::class)->post('/sessions', $payload);
     }
 
-    public function checkPaymentSession($sessionId){
+    public function checkPaymentSession($sessionId)
+    {
         return app(Xendit::class)->get('/sessions/' . $sessionId);
     }
-    public function cancelPaymentSession($sessionId){
+    public function cancelPaymentSession($sessionId)
+    {
         $data = [];
         return app(Xendit::class)->post('/sessions/' . $sessionId . '/cancel', $data);
     }
@@ -35,11 +40,13 @@ class PaymentAction
     }
 
 
-    public function checkBalance(){
+    public function checkBalance()
+    {
         return app(Xendit::class)->balance();
     }
 
-    public function createPayout(array $payout){
+    public function createPayout(array $payout)
+    {
         $data = [
             'reference_id' => 'myref-' . time(), // Generate unique reference ID
             'channel_code' => $payout['channel_code'], // Example channel code
@@ -50,8 +57,11 @@ class PaymentAction
             'amount' => $payout['amount'], // Example amount
             'description' => 'Penarikan Dana',
             'currency' => 'IDR',
+            'metadata'            => [
+                'bakery_id' => $payout['bakery_id'],
+            ],
         ];
-    
+
         return app(Xendit::class)->post('/v2/payouts', $data);
     }
 }

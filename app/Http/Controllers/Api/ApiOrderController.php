@@ -37,15 +37,15 @@ class ApiOrderController extends Controller
         return response()->json($query);
     }
 
-    public function getAllOrderByBakeryId(Request $request){
+    public function getAllOrderByBakeryId(Request $request, string $bakeryId){
         $user = $request->user(); // Sanctum
 
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $bakery = Bakery::where('user_id',  $user->id)->first();
-        
+        $bakery = Bakery::findOrFail('id',  $bakeryId);
+
         $query = Order::where('bakery_id', $bakery->id)
             ->with(['items', 'bakery'])
             ->orderByDesc('created_at')

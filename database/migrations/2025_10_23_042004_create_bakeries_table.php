@@ -21,6 +21,7 @@ return new class extends Migration
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
             $table->string('contact_info')->nullable();
+            $table->enum('discount_status', ['active', 'inactive'])->default('inactive');
             $table->boolean('is_active')->default(true);
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->timestamps();

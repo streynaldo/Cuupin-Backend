@@ -98,6 +98,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/bakeries/{id}/hours', [ApiOperatingHourController::class, 'store'])->whereNumber('id');
         Route::put('/operating-hours/{id}', [ApiOperatingHourController::class, 'update'])->whereNumber('id');
         Route::delete('/operating-hours/{id}', [ApiOperatingHourController::class, 'destroy'])->whereNumber('id');
+        // activate/deactivate bakery status
+        Route::patch('/bakeries/{id}/activate',  [ApiBakeryController::class, 'activate'])->whereNumber('id');
+        Route::patch('/bakeries/{id}/deactivate', [ApiBakeryController::class, 'deactivate'])->whereNumber('id');
     });
     // write: login + ability products
     Route::middleware(['auth:sanctum', 'abilities:products:write'])->group(function () {

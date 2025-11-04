@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bakery;
+use App\Models\BakeryWallet;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
@@ -42,14 +43,27 @@ class ApiBakeryController extends Controller
             'latitude'     => ['nullable', 'numeric', 'between:-90,90'],
             'longitude'    => ['nullable', 'numeric', 'between:-180,180'],
             'contact_info' => ['nullable', 'string', 'max:100'],
+            'discount_status' => ['nullable', 'string', 'in:active,inactive'],
             'is_active'    => ['boolean'],
         ]);
 
         $data['user_id'] = $request->user()->id;
 
         try {
-            $bakery = Bakery::create($data)->load('user:id,name,email');
-            return response()->json($bakery, 201);
+            $bakery = Bakery::create($data);
+            $wallet = BakeryWallet::create([
+                'bakery_id' => $bakery->id,
+                'total_wallet' => 0,
+                'total_earned' => 0,
+                'total_withdrawn' => 0,
+                'no_rekening' => null,
+            ]);
+            $bakery->load('user:id,name,email');
+            return response()->json([
+                'success' => true,
+                'message' => 'Bakery & wallet created successfully',
+                'data' => [$bakery, $wallet],
+            ], 201);
         } catch (QueryException $e) {
             return response()->json(['message' => 'Failed to create bakery'], 500);
         }
@@ -66,6 +80,37 @@ class ApiBakeryController extends Controller
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Bakery not found'], 404);
         }
+    }
+
+    // app/Http/Controllers/Api/ApiBakeryController.php
+    public function activate(Request $request, $id)
+    {
+        $bakery = Bakery::find($id);
+        if (! $bakery) return response()->json(['message' => 'Bakery not found'], 404);
+
+        $this->authorizeOwnerOrAdmin($request->user(), $bakery);
+
+        $bakery->update(['is_active' => true]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Bakery activated by vendor',
+            'data'    => $bakery->fresh(['products'])
+        ]);
+    }
+
+    public function deactivate(Request $request, $id)
+    {
+        $bakery = Bakery::find($id);
+        if (! $bakery) return response()->json(['message' => 'Bakery not found'], 404);
+
+        $this->authorizeOwnerOrAdmin($request->user(), $bakery);
+
+        $bakery->update(['is_active' => false]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Bakery deactivated by vendor',
+            'data'    => $bakery->fresh(['products'])
+        ]);
     }
 
     /**

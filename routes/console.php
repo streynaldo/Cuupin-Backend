@@ -8,6 +8,12 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule untuk reminder tugas
+// Schedule untuk reminder discount event expiration dan refresh status bakery
 Schedule::command('discounts:expire')->everyMinute();
 Schedule::command('bakeries:refresh-discount-status')->everyFiveMinutes();
+
+// Hanya update harga untuk event yang aktif
+Schedule::command('discounts:reprice-active')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();

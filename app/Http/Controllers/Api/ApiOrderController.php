@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\User;
 use App\Models\Order;
 use App\Models\Bakery;
 use App\Models\Product;
 use App\Models\OrderItems;
 use Illuminate\Support\Str;
+use App\Models\BakeryWallet;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\BakeryWallet;
 
 class ApiOrderController extends Controller
 {
@@ -25,6 +26,27 @@ class ApiOrderController extends Controller
         }
 
         $query = Order::where('user_id', $user->id)
+            ->with(['items', 'bakery'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        // if ($withItems) {
+        //     $query->with(['items' => fn($q) => $q->orderBy('id')]);
+        // }
+
+        return response()->json($query);
+    }
+
+    public function getAllOrderByBakeryId(Request $request){
+        $user = $request->user(); // Sanctum
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $bakery = Bakery::where('user_id',  $user->id)->first();
+        
+        $query = Order::where('bakery_id', $bakery->id)
             ->with(['items', 'bakery'])
             ->orderByDesc('created_at')
             ->get();

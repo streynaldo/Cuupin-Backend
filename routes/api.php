@@ -137,6 +137,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/order', [ApiOrderController::class, 'store']);
         Route::get('/order', [ApiOrderController::class, 'index']);
     });
+    Route::middleware(['auth:sanctum', 'abilities:orders:read'])->group(function () {
+        Route::get('/order/{bakeryId}', [ApiOrderController::class, 'getAllOrderByBakeryId']);
+    });
     Route::middleware(['auth:sanctum', 'abilities:orders:update'])->group(function () {
         Route::patch('/order/{id}', [ApiOrderController::class, 'confirmation']);
         Route::patch('/order/{id}/pickup', [ApiOrderController::class, 'update']);

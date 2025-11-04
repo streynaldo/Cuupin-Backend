@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Bakery;
+use App\Models\BakeryWallet;
 use App\Models\Payment;
+use App\Models\WalletTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
@@ -65,6 +68,27 @@ class XenditWebhookController extends Controller
             ]);
         }
 
+        if ($event === 'payment_session.expired') {
+            $referenceId = $data['reference_id'] ?? null;
+            $status      = strtoupper((string) ($data['status'] ?? ''));
+
+            if (!$referenceId) {
+                Log::warning('No reference_id in payload', ['data' => $data]);
+                return response()->json(['status' => 'no reference_id'], 402);
+            }
+
+            $order = Order::where('reference_id', $referenceId)->first();
+            if (!$order) {
+                Log::warning('Order not found', ['reference_id' => $referenceId]);
+                return response()->json(['status' => 'order not found'], 402);
+            }
+
+            $order->status = 'CANCELLED';
+            $order->save();
+
+            return response()->json(['status' => 'Order Cancelled', 'order' => $order], 200);
+        }
+
         // 5) Event lain (refund / payout / dsb) tinggal tambahkan disini
         if (str_starts_with($event, 'refund.succeeded')) {
             $referenceId = $data['reference_id'] ?? null;
@@ -77,9 +101,9 @@ class XenditWebhookController extends Controller
             }
 
             if (in_array($status, ['COMPLETED', 'SUCCEEDED', 'PAID', 'CAPTURED'])) {
-                if($order->total_purchased_price == $order->total_refunded_price){
+                if ($order->total_purchased_price == $order->total_refunded_price) {
                     $order->status = 'CANCELLED';
-                }elseif($order->total_refunded_price < $order->total_purchased_price){
+                } elseif ($order->total_refunded_price < $order->total_purchased_price) {
                     $order->status = 'CONFIRMED';
                 }
                 $order->save();
@@ -90,9 +114,20 @@ class XenditWebhookController extends Controller
 
             return response()->json(['status' => $order->status, 'order' => $order], 200);
         }
-        if (str_starts_with($event, 'payout.') || str_starts_with($event, 'disbursement.')) {
-            // handle payout/disbursement…
-            return response()->json(['ok' => true]);
+        if (str_starts_with($event, 'payout.succeeded')) {
+            $bakeryId = $data['metadata']['bakery_id'] ?? null;
+            $bakery = Bakery::where('id', $bakeryId)->first();
+            $bakeryWallet = BakeryWallet::where('bakery_id', $bakery->id)->first();
+
+            $bakeryWallet->total_wallet -= $data['amount'];
+            $bakeryWallet->total_withdrawn += $data['amount'];
+            $bakeryWallet->save();
+
+            $walletTransaction = WalletTransaction::create([
+                'bakery_wallet_id' => $bakeryWallet->id,
+                'amount' => $data['amount']
+            ]);
+            return response()->json(['status' => 'Payout Success', 'data' => $walletTransaction], 200);
         }
 
         Log::info('Unhandled Xendit event', ['event' => $event]);

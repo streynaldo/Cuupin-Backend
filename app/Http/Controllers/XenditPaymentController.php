@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Actions\Xendit\PaymentAction;
+use App\Models\BakeryWallet;
 
 class XenditPaymentController extends Controller
 {
@@ -29,7 +30,8 @@ class XenditPaymentController extends Controller
 
         return response()->json($res);
     }
-    public function cancelSession(PaymentAction $pa, $sessionId){
+    public function cancelSession(PaymentAction $pa, $sessionId)
+    {
         $res = $pa->cancelPaymentSession($sessionId);
         return response()->json($res);
     }
@@ -60,8 +62,6 @@ class XenditPaymentController extends Controller
     {
         $res = $pa->checkBalance();
 
-        dd($res);
-
         return response()->json($res);
     }
 
@@ -72,17 +72,25 @@ class XenditPaymentController extends Controller
                 'channel_code' => 'required|string',
                 'account_holder_name' => 'required|string',
                 'account_number' => 'required|numeric',
-                'amount' => 'required|numeric'
+                'amount' => 'required|numeric',
+                'bakery_id' => 'required|numeric'
             ]
         );
+        $bakeryWallet = BakeryWallet::where('bakery_id', $validated['bakery_id'])->first();
+
+        if ($validated['amount'] > $bakeryWallet->total_wallet - 5000) {
+            return response()->json(['status' => 'Failed amount more than total wallet amount', 'wallet' => $bakeryWallet->total_wallet - 5000], 400);
+        }
+
         $res = $pa->createPayout([
             'channel_code' => $validated['channel_code'],
             'account_holder_name' => $validated['account_holder_name'],
             'account_number' => $validated['account_number'],
-            'amount' => $validated['amount']
+            'amount' => $validated['amount'],
+            'bakery_id' => $validated['bakery_id'],
         ]);
 
-        return response()->json($res);
+        return response()->json(['status' => 'Payout Success', 'data' => $res], 200);
     }
 
     public function success($id)

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('bakery_wallet_id')->constrained('bakery_wallets')->cascadeOnDelete();
             $table->integer('amount');
+            $table->string('reference_id');
             $table->timestamps();
         });
     }

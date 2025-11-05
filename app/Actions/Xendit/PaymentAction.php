@@ -48,7 +48,7 @@ class PaymentAction
     public function createPayout(array $payout)
     {
         $data = [
-            'reference_id' => 'myref-' . time(), // Generate unique reference ID
+            'reference_id' => 'CPT-' . time(), // Generate unique reference ID
             'channel_code' => $payout['channel_code'], // Example channel code
             'channel_properties' => [
                 'account_number' => $payout['account_number'],

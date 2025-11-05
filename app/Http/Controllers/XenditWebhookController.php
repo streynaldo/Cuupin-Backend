@@ -125,7 +125,8 @@ class XenditWebhookController extends Controller
 
             $walletTransaction = WalletTransaction::create([
                 'bakery_wallet_id' => $bakeryWallet->id,
-                'amount' => $data['amount']
+                'amount' => $data['amount'],
+                'reference_id' => $data['reference_id']
             ]);
             return response()->json(['status' => 'Payout Success', 'data' => $walletTransaction], 200);
         }

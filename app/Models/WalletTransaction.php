@@ -12,6 +12,7 @@ class WalletTransaction extends Model
     protected $fillable = [
         'bakery_wallet_id',
         'amount',
+        'reference_id'
     ];
 
     public function wallet()

@@ -19,6 +19,8 @@ class BakeryWalletSeeder extends Seeder
                 'total_earned' => 0,
                 'total_withdrawn' => 0,
                 'no_rekening' => $this->generateAccountNumber(),
+                'nama_bank' => 'Bank Cuupin',
+                'nama_pemilik' => $bakery->name,
             ]);
         });
     }

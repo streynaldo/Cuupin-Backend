@@ -17,6 +17,8 @@ return new class extends Migration
             $table->unsignedInteger('total_earned')->default(0);
             $table->unsignedInteger('total_withdrawn')->default(0);
             $table->string('no_rekening')->nullable()->unique();
+            $table->string('nama_bank')->nullable();
+            $table->string('nama_pemilik')->nullable();
             $table->foreignId('bakery_id')->constrained('bakeries')->cascadeOnDelete();
             $table->timestamps();
         });

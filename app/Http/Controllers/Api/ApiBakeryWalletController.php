@@ -48,7 +48,7 @@ class ApiBakeryWalletController extends Controller
         );
 
         $rows = $wallet->transactions()->orderByDesc('id')
-            ->paginate($request->integer('per_page', 10));
+            ->get();
 
         return response()->json($rows);
     }

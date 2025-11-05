@@ -136,6 +136,20 @@ class ApiOrderController extends Controller
         }
     }
 
+    public function showByBakeryId(Request $request, string $bakeryId, string $id){
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $order = Order::with('items')->findOrFail($id);
+        if($order->bakery_id != $bakeryId){
+            return response()->json(['message' => 'This bakery cant access the order'], 401);
+        }
+
+        return response()->json($order, 200);
+    }
+
     /**
      * Update the specified resource in storage.
      */

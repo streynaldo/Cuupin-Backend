@@ -19,6 +19,8 @@ class BakeryWalletSeeder extends Seeder
                 'total_earned' => 0,
                 'total_withdrawn' => 0,
                 'no_rekening' => $this->generateAccountNumber(),
+                'nama_bank' => array_rand(['ID_BCA', 'ID_MANDIRI', 'ID_BRI', 'ID_BNI']),
+                'nama_pemilik' => $bakery->name,
             ]);
         });
     }

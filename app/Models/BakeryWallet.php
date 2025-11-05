@@ -14,7 +14,9 @@ class BakeryWallet extends Model
         'total_wallet',
         'total_earned',
         'total_withdrawn',
-        'no_rekening', // kalau ada
+        'no_rekening',
+        'nama_bank',
+        'nama_pemilik',
     ];
 
     public function bakery()

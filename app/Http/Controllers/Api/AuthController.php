@@ -113,7 +113,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         // user() mengembalikan instance App\Models\User untuk token yang dipakai
-        $request->user()->currentAccessToken()?->delete();
+        $request->user()->currentAccessToken()->delete();
 
         // Kalau mau logout dari SEMUA device/token:
         // $request->user()->tokens()->delete();

@@ -140,8 +140,9 @@ class ApiBakeryController extends Controller
 
         // fresh() to get updated relations
         return response()->json([
-            $bakery->fresh()->load('user:id,name,email'),
-            'message' => 'Bakery updated'
+            'success' => true,
+            'message' => 'Bakery updated successfully',
+            'data'    => $bakery,
         ], 200);
     }
 

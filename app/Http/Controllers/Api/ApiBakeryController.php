@@ -153,22 +153,22 @@ class ApiBakeryController extends Controller
         ]);
 
         // handle logo baru
-        if ($request->hasFile('logo')) {
+        if ($request->hasFile('logo_url')) {
             if (!empty($bakery->logo_url)) {
                 $old = ltrim(str_replace('/storage/', '', parse_url($bakery->logo_url, PHP_URL_PATH) ?? ''), '/');
                 if ($old !== '') Storage::disk('public')->delete($old);
             }
-            $path = $request->file('logo')->store('bakery_logos', 'public');
+            $path = $request->file('logo_url')->store('bakery_logos', 'public');
             $data['logo_url'] = url(Storage::url($path));
         }
 
         // handle banner baru
-        if ($request->hasFile('banner')) {
+        if ($request->hasFile('banner_url')) {
             if (!empty($bakery->banner_url)) {
                 $old = ltrim(str_replace('/storage/', '', parse_url($bakery->banner_url, PHP_URL_PATH) ?? ''), '/');
                 if ($old !== '') Storage::disk('public')->delete($old);
             }
-            $path = $request->file('banner')->store('bakery_banners', 'public');
+            $path = $request->file('banner_url')->store('bakery_banners', 'public');
             $data['banner_url'] = url(Storage::url($path));
         }
 

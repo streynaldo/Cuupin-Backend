@@ -7,12 +7,10 @@ use App\Models\DiscountEvent;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class ApiDiscountEventController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $rows = DiscountEvent::withCount('products')
@@ -26,22 +24,28 @@ class ApiDiscountEventController extends Controller
         ], 200);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $data = $request->validate([
             'discount_name'       => ['required', 'string', 'max:150'],
             'discount'            => ['required', 'integer', 'between:1,100'],
-            'discount_photo'      => ['nullable', 'url'],
+            // ganti: URL -> FILE (multipart) seperti produk
+            'discount_photo'      => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'discount_start_time' => ['required', 'date'],
             'discount_end_time'   => ['required', 'date', 'after:discount_start_time'],
-            'bakery_id'             => ['required', 'exists:bakeries,id']
+            'bakery_id'           => ['required', 'exists:bakeries,id']
         ]);
 
         $data['discount_start_time'] = Carbon::parse($data['discount_start_time']);
         $data['discount_end_time']   = Carbon::parse($data['discount_end_time']);
+
+        // Upload foto (opsional) → simpan URL absolut
+        if ($request->hasFile('discount_photo')) {
+            $path = $request->file('discount_photo')->store('discount_photos', 'public');
+            $data['discount_photo'] = url(Storage::url($path));
+        } else {
+            $data['discount_photo'] = null;
+        }
 
         $row = DiscountEvent::create($data);
 
@@ -51,9 +55,6 @@ class ApiDiscountEventController extends Controller
         ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show($id)
     {
         $row = DiscountEvent::with([
@@ -79,9 +80,6 @@ class ApiDiscountEventController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, $id)
     {
         $row = DiscountEvent::find($id);
@@ -92,12 +90,13 @@ class ApiDiscountEventController extends Controller
         $data = $request->validate([
             'discount_name'       => ['sometimes', 'string', 'max:150'],
             'discount'            => ['sometimes', 'integer', 'between:1,100'],
-            'discount_photo'      => ['sometimes', 'nullable', 'url'],
+            // ganti: URL -> FILE (multipart) seperti produk
+            'discount_photo'      => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'discount_start_time' => ['sometimes', 'date'],
             'discount_end_time'   => ['sometimes', 'date'],
         ]);
 
-        // Validasi after:open saat kombinasi waktu berubah
+        // Validasi kombinasi waktu (pakai nilai baru kalau ada)
         $start = array_key_exists('discount_start_time', $data)
             ? Carbon::parse($data['discount_start_time'])
             : Carbon::parse($row->discount_start_time);
@@ -110,11 +109,27 @@ class ApiDiscountEventController extends Controller
             return response()->json(['message' => 'discount_end_time must be after discount_start_time'], 422);
         }
 
-        // Simpan kembali (pastikan Carbon ke string jika perlu)
-        $data['discount_start_time'] = $start;
-        $data['discount_end_time']   = $end;
+        // Jika ada file foto baru → hapus lama & simpan baru
+        if ($request->hasFile('discount_photo')) {
+            if (!empty($row->discount_photo)) {
+                $oldPath = ltrim(str_replace('/storage/', '', parse_url($row->discount_photo, PHP_URL_PATH) ?? ''), '/');
+                if ($oldPath !== '') {
+                    Storage::disk('public')->delete($oldPath);
+                }
+            }
+            $path = $request->file('discount_photo')->store('discount_photos', 'public');
+            $data['discount_photo'] = url(Storage::url($path));
+        }
+        // kalau tidak ada file yang dikirim, biarkan foto lama
 
-        $row->update($data);
+        // Simpan kembali
+        $row->update([
+            'discount_name'       => $data['discount_name'] ?? $row->discount_name,
+            'discount'            => array_key_exists('discount', $data) ? (int) $data['discount'] : $row->discount,
+            'discount_photo'      => array_key_exists('discount_photo', $data) ? $data['discount_photo'] : $row->discount_photo,
+            'discount_start_time' => $start,
+            'discount_end_time'   => $end,
+        ]);
 
         return response()->json([
             'message' => 'Discount event updated',
@@ -122,10 +137,6 @@ class ApiDiscountEventController extends Controller
         ]);
     }
 
-    /**
-     * POST /discount-events/{id}/products
-     * Assign multiple products to a discount event
-     */
     public function attachProducts(Request $request, $id)
     {
         $event = DiscountEvent::find($id);
@@ -150,10 +161,6 @@ class ApiDiscountEventController extends Controller
         ]);
     }
 
-    /**
-     * DELETE /discount-events/{id}/products
-     * Remove products from a discount event
-     */
     public function detachProducts(Request $request, $id)
     {
         $event = DiscountEvent::find($id);
@@ -180,9 +187,6 @@ class ApiDiscountEventController extends Controller
         ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy($id)
     {
         $row = DiscountEvent::find($id);
@@ -190,7 +194,17 @@ class ApiDiscountEventController extends Controller
             return response()->json(['message' => 'Discount event not found'], 404);
         }
 
+        // Lepas relasi produk
         Product::where('discount_id', $row->id)->update(['discount_id' => null]);
+
+        // Hapus file foto jika ada (sesuai pola produk)
+        if (!empty($row->discount_photo)) {
+            $oldPath = ltrim(str_replace('/storage/', '', parse_url($row->discount_photo, PHP_URL_PATH) ?? ''), '/');
+            if ($oldPath !== '') {
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
+
         $row->delete();
 
         return response()->json(['message' => 'Discount event deleted']);

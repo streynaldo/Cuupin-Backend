@@ -7,6 +7,7 @@ use App\Models\Bakery;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ApiProductController extends Controller
@@ -42,7 +43,7 @@ class ApiProductController extends Controller
             'description'    => ['nullable', 'string'],
             'price'          => ['required', 'integer', 'min:0'],
             'best_before'    => ['nullable', 'integer', Rule::in([1, 2, 3])],
-            'image_url'      => ['nullable', 'url'],
+            'image_url'      => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'discount_price' => ['nullable', 'integer', 'min:0'],
             'discount_id'    => ['nullable', 'integer', 'exists:discount_events,id'],
         ]);
@@ -55,7 +56,24 @@ class ApiProductController extends Controller
             return response()->json(['message' => 'discount_price must be less than price'], 422);
         }
 
-        $product = Product::create($data)->load(['bakery', 'discountEvent']);
+        // Upload foto (jika ada)
+        $imageUrl = null;
+        if ($request->hasFile('image_url')) {
+            $path = $request->file('image_url')->store('product_photos', 'public');
+            $imageUrl = Storage::url($path);
+            $imageUrl = url($imageUrl);
+        }
+
+        $product = Product::create([
+            'bakery_id'      => $data['bakery_id'],
+            'product_name'   => $data['product_name'],
+            'description'    => $data['description'] ?? null,
+            'price'          => $data['price'],
+            'best_before'    => $data['best_before'] ?? null,
+            'image_url'      => $imageUrl,
+            'discount_price' => $data['discount_price'] ?? null,
+            'discount_id'    => $data['discount_id'] ?? null,
+        ])->load(['bakery', 'discountEvent']);
 
         return response()->json([
             'success' => true,
@@ -74,10 +92,6 @@ class ApiProductController extends Controller
         if (! $product) {
             return response()->json(['message' => 'Product not found'], 404);
         }
-        // $product->load([
-        //     'bakery:id,name,user_id',
-        //     'discountEvent:id,discount_name,discount,discount_start_time,discount_end_time'
-        // ]);
 
         return response()->json([
             'success' => true,
@@ -114,6 +128,7 @@ class ApiProductController extends Controller
     {
         $product = Product::with('bakery:id,user_id')->findOrFail($id);
 
+        // Pastikan user berhak mengelola produk ini
         $this->authorizeOwnerOrAdminByBakery($request->user(), (int) $product->bakery_id);
 
         $data = $request->validate([
@@ -121,37 +136,40 @@ class ApiProductController extends Controller
             'description'    => ['sometimes', 'nullable', 'string'],
             'price'          => ['sometimes', 'integer', 'min:0'],
             'best_before'    => ['sometimes', 'nullable', 'integer', Rule::in([1, 2, 3])],
-            'image_url'      => ['sometimes', 'nullable', 'url'],
-            'discount_price' => ['sometimes', 'nullable', 'integer', 'min:0'],
-            'discount_id'    => ['sometimes', 'nullable', 'integer', 'exists:discount_events,id'],
-            // pindah bakery (optional)
-            'bakery_id'      => ['sometimes', 'integer', 'exists:bakeries,id'],
+            'image_url'      => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
-        // Kalau mau pindahkan product ke bakery lain → cek owner bakery baru
-        if (array_key_exists('bakery_id', $data)) {
-            $this->authorizeOwnerOrAdminByBakery($request->user(), (int) $data['bakery_id']);
-        }
-
-        // validasi diskon < price jika keduanya ada di payload / nilai akhirnya berubah
-        $finalPrice = $data['price'] ?? $product->price;
-        if (array_key_exists('discount_price', $data) && $data['discount_price'] !== null) {
-            if ($data['discount_price'] >= $finalPrice) {
-                return response()->json(['message' => 'discount_price must be less than price'], 422);
+        // Jika ada file image baru, hapus lama & simpan yang baru
+        if ($request->hasFile('image_url')) {
+            // Hapus file lama bila ada
+            if (!empty($product->image_url)) {
+                $oldPath = ltrim(str_replace('/storage/', '', parse_url($product->image_url, PHP_URL_PATH) ?? ''), '/');
+                if ($oldPath !== '') {
+                    Storage::disk('public')->delete($oldPath);
+                }
             }
+            // Simpan file baru (nama unik otomatis)
+            $path = $request->file('image_url')->store('product_photos', 'public');
+            $data['image_url'] = url(Storage::url($path));
         }
 
-        $product->update($data);
+        // Update field lain (yang dikirim saja yang diubah)
+        $product->update([
+            'product_name'   => $data['product_name'] ?? $product->product_name,
+            'description'    => array_key_exists('description', $data)    ? $data['description']    : $product->description,
+            'price'          => $data['price'] ?? $product->price,
+            'best_before'    => array_key_exists('best_before', $data)    ? $data['best_before']    : $product->best_before,
+            'image_url'      => array_key_exists('image_url', $data)      ? $data['image_url']      : $product->image_url,
+            'discount_id'    => array_key_exists('discount_id', $data)    ? $data['discount_id']    : $product->discount_id,
+        ]);
 
-        return response()->json(
-            [
-                'success' => true,
-                'message' => 'Product updated successfully',
-                'data'    => $product->fresh()->load(['bakery', 'discountEvent']),
-            ],
-            200
-        );
+        return response()->json([
+            'success' => true,
+            'message' => 'Product updated successfully',
+            'data'    => $product->fresh()->load(['bakery', 'discountEvent']),
+        ], 200);
     }
+
 
     /**
      * Remove the specified resource from storage.
@@ -160,11 +178,33 @@ class ApiProductController extends Controller
     {
         $product = Product::with('bakery:id,user_id')->findOrFail($id);
 
+        // pastikan user berhak
         $this->authorizeOwnerOrAdminByBakery($request->user(), (int) $product->bakery_id);
 
+        // hapus foto fisik jika ada
+        $this->deleteImageIfExists($product->image_url);
+
+        // hapus product dari database
         $product->delete();
 
-        return response()->json(['message' => 'Product deleted']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Product deleted successfully',
+        ], 200);
+    }
+
+    // Hapus image dari storage jika ada
+    private function deleteImageIfExists(?string $imageUrl): void
+    {
+        if (!$imageUrl) return;
+
+        // Ambil path dari URL, buang prefix `/storage/`
+        $path = parse_url($imageUrl, PHP_URL_PATH) ?: '';
+        $relative = ltrim(str_replace('/storage/', '', $path), '/');
+
+        if ($relative !== '') {
+            Storage::disk('public')->delete($relative);
+        }
     }
 
     private function authorizeOwnerOrAdminByBakery(User $user, int $bakeryId): void

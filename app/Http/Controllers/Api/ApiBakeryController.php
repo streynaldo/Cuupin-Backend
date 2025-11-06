@@ -190,7 +190,7 @@ class ApiBakeryController extends Controller
             'success' => true,
             'message' => 'Bakery updated successfully',
             'data'    => $bakery->fresh(),
-        ], 200);
+        ], 201);
     }
 
     /**

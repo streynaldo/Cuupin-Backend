@@ -258,10 +258,14 @@ class ApiOrderController extends Controller
         ], 200);
     }
 
-    public function cancellation(string $id)
+    public function cancellation(Request $request,string $id)
     {
+        $user = $request->user();
         $order = Order::findOrFail($id);
-        if ($order->status == 'ONPROGRESS') {
+        if ($order->user_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        if ($order->status == 'ONPROGRESS' && $order->expired_at > now()) {
             $order->status == 'CANCELLED';
             $order->save();
         } else {

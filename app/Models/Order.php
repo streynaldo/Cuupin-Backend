@@ -16,6 +16,8 @@ class Order extends Model
         'total_refunded_price',
         'reference_id',
         'status',
+        'expired_at',
+        'payment_session_url'
     ];
 
     // === Relations ===

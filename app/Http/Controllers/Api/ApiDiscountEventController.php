@@ -69,7 +69,7 @@ class ApiDiscountEventController extends Controller
 
     public function getEventsByBakeryId(string $bakeryId)
     {
-        $events = DiscountEvent::where('bakery_id', $bakeryId)->get();
+        $events = DiscountEvent::with('products')->where('bakery_id', $bakeryId)->get();
         if (!$events) {
             return response()->json(['message' => 'Discount Events Not Found']);
         }

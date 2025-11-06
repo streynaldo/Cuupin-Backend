@@ -77,6 +77,7 @@ Route::prefix('v1')->group(function () {
     // public read products
     Route::get('/products', [ApiProductController::class, 'index']);
     Route::get('/products/{id}', [ApiProductController::class, 'show'])->whereNumber('id');
+    Route::get('/bakeries/{id}/products', [ApiProductController::class, 'getProductsByBakery'])->whereNumber('id');
     // public read discounts
     Route::get('/discount-events', [ApiDiscountEventController::class, 'index']);
     Route::get('/discount-events/{id}', [ApiDiscountEventController::class, 'show'])->whereNumber('id');

@@ -143,7 +143,7 @@ class ApiOrderController extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $order = Order::with(['items', 'user' => fn($q) => $q->select('id', 'name')])->findOrFail($id);
+        $order = Order::with(['items.product', 'user' => fn($q) => $q->select('id', 'name')])->findOrFail($id);
         if($order->bakery_id != $bakeryId){
             return response()->json(['message' => 'This bakery cant access the order'], 401);
         }

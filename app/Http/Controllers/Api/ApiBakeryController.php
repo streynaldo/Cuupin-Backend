@@ -22,11 +22,12 @@ class ApiBakeryController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Bakery list retrieved successfully',
-            'data'    => $bakeries
-        ], 200);
+        return response()->json($bakeries, 200);
+        // return response()->json([
+        //     'success' => true,
+        //     'message' => 'Bakery list retrieved successfully',
+        //     'data'    => $bakeries
+        // ], 200);
     }
 
     /**

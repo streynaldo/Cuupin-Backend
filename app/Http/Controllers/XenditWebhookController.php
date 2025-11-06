@@ -56,6 +56,7 @@ class XenditWebhookController extends Controller
 
             if (in_array($status, ['COMPLETED', 'SUCCEEDED', 'PAID', 'CAPTURED'])) {
                 $order->status = 'PAID';
+                $order->expired_at = null;
                 $order->save();
                 Log::info('Order marked PAID', ['order_id' => $order->id, 'reference_id' => $referenceId]);
             } else {

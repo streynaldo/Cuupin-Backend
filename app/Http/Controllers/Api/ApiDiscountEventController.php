@@ -29,7 +29,6 @@ class ApiDiscountEventController extends Controller
         $data = $request->validate([
             'discount_name'       => ['required', 'string', 'max:150'],
             'discount'            => ['required', 'integer', 'between:1,100'],
-            // ganti: URL -> FILE (multipart) seperti produk
             'discount_photo'      => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'discount_start_time' => ['required', 'date'],
             'discount_end_time'   => ['required', 'date', 'after:discount_start_time'],
@@ -50,6 +49,7 @@ class ApiDiscountEventController extends Controller
         $row = DiscountEvent::create($data);
 
         return response()->json([
+            'success' => true,
             'message' => 'Discount event created',
             'data'    => $row,
         ], 201);
@@ -132,6 +132,7 @@ class ApiDiscountEventController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Discount event updated',
             'data'    => $row->fresh()->loadCount('products'),
         ]);
@@ -156,6 +157,7 @@ class ApiDiscountEventController extends Controller
         }
 
         return response()->json([
+            'success' => true,
             'message' => 'Products attached to discount event',
             'count'   => $products->count(),
         ]);
@@ -182,6 +184,7 @@ class ApiDiscountEventController extends Controller
         }
 
         return response()->json([
+            'success' => true,
             'message' => 'Products detached from discount event',
             'count'   => $products->count(),
         ]);
@@ -207,6 +210,9 @@ class ApiDiscountEventController extends Controller
 
         $row->delete();
 
-        return response()->json(['message' => 'Discount event deleted']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Discount event deleted'
+        ], 200);
     }
 }

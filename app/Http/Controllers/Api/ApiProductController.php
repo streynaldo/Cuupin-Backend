@@ -137,6 +137,7 @@ class ApiProductController extends Controller
             'price'          => ['sometimes', 'integer', 'min:0'],
             'best_before'    => ['sometimes', 'nullable', 'integer', Rule::in([1, 2, 3])],
             'image_url'      => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'status'         => ['sometimes', 'in:available,not_available'],
         ]);
 
         // Jika ada file image baru, hapus lama & simpan yang baru
@@ -161,6 +162,7 @@ class ApiProductController extends Controller
             'best_before'    => array_key_exists('best_before', $data)    ? $data['best_before']    : $product->best_before,
             'image_url'      => array_key_exists('image_url', $data)      ? $data['image_url']      : $product->image_url,
             'discount_id'    => array_key_exists('discount_id', $data)    ? $data['discount_id']    : $product->discount_id,
+            'status'         => $data['status'] ?? $product->status,
         ]);
 
         return response()->json([

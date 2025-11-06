@@ -22,6 +22,7 @@ class DiscountEventSeeder extends Seeder
                 'discount_photo'      => 'https://example.com/halloween.jpg',
                 'discount_start_time' => Carbon::now()->subDays(2),
                 'discount_end_time'   => Carbon::now()->addDays(5),
+                'bakery_id'            => 1
             ],
             [
                 'discount_name'       => 'Year End Sale',
@@ -29,6 +30,15 @@ class DiscountEventSeeder extends Seeder
                 'discount_photo'      => 'https://example.com/yearend.jpg',
                 'discount_start_time' => Carbon::now()->addDays(10),
                 'discount_end_time'   => Carbon::now()->addDays(20),
+                'bakery_id'            => 2
+            ],
+            [
+                'discount_name'       => 'Year Start Sale',
+                'discount'            => 45,
+                'discount_photo'      => 'https://example.com/yearend.jpg',
+                'discount_start_time' => Carbon::now()->addDays(10),
+                'discount_end_time'   => Carbon::now()->addDays(20),
+                'bakery_id'            => 3
             ],
         ];
 

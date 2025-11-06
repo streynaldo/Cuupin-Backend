@@ -16,6 +16,7 @@ class DiscountEvent extends Model
         'discount_photo',
         'discount_start_time',
         'discount_end_time',
+        'bakery_id'
     ];
 
     protected $casts = [
@@ -27,6 +28,10 @@ class DiscountEvent extends Model
     public function products()
     {
         return $this->hasMany(Product::class, 'discount_id');
+    }
+
+    public function bakery(){
+        return $this->belongsTo(Bakery::class);
     }
 
     // === SCOPES & METHODS ===

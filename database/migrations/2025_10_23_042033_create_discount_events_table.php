@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('discount_photo')->nullable();
             $table->dateTime('discount_start_time');
             $table->dateTime('discount_end_time');
+            $table->foreignId('bakery_id')->constrained('bakeries')->cascadeOnDelete();
             $table->timestamps();
             // Indexes to quickly find active discount windows
             $table->index(['discount_start_time', 'discount_end_time']);

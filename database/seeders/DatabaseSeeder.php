@@ -16,9 +16,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             BakerySeeder::class,
-            ProductSeeder::class,
             OperatingHourSeeder::class,
             DiscountEventSeeder::class,
+            ProductSeeder::class,
             BakeryWalletSeeder::class,
             // TestDiscountExpire::class,
             // TestBakeryCronSeeder::class,

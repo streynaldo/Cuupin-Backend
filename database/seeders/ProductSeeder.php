@@ -32,8 +32,8 @@ class ProductSeeder extends Seeder
                 'image_url'      => 'https://placehold.co/300x300?text=Roti+Tawar',
                 'discount_price' => null,
                 'status'         => 'available',
-                'bakery_id'      => Arr::random($bakeries),
-                'discount_id'    => $discounts ? Arr::random($discounts) : null,
+                'bakery_id'      => 3,
+                'discount_id'    => 3,
             ],
             [
                 'product_name'   => 'Croissant Mentega',

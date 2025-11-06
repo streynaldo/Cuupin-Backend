@@ -56,33 +56,60 @@ class ApiProductController extends Controller
 
         $product = Product::create($data)->load(['bakery', 'discountEvent']);
 
-        return response()->json($product, 201);
+        return response()->json([
+            'success' => true,
+            'message' => 'Product created successfully',
+            'data'    => $product
+        ], 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        $product = Product::with([
-            'bakery:id,name,user_id',
-            'discountEvent:id,discount_name,discount,discount_start_time,discount_end_time'
-        ])->find($id);
+        $product = Product::find($id);
+
         if (! $product) {
             return response()->json(['message' => 'Product not found'], 404);
         }
-        $product->load([
-            'bakery:id,name,user_id',
-            'discountEvent:id,discount_name,discount,discount_start_time,discount_end_time'
-        ]);
+        // $product->load([
+        //     'bakery:id,name,user_id',
+        //     'discountEvent:id,discount_name,discount,discount_start_time,discount_end_time'
+        // ]);
 
-        return response()->json($product);
+        return response()->json([
+            'success' => true,
+            'message' => 'Product retrieved successfully',
+            'data'    => $product
+        ], 200);
+    }
+
+    // get products by bakery id
+    public function getProductsByBakery($id)
+    {
+        $products = Product::where('bakery_id', $id)
+            ->orderByDesc('id')->get();
+
+        if ($products->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No products found for this bakery',
+                'products' => []
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Products retrieved',
+            'products' => $products
+        ], 200);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
         $product = Product::with('bakery:id,user_id')->findOrFail($id);
 
@@ -116,17 +143,19 @@ class ApiProductController extends Controller
         $product->update($data);
 
         return response()->json(
-            $product->fresh()->load([
-                'bakery:id,name,user_id',
-                'discountEvent:id,discount_name,discount,discount_start_time,discount_end_time'
-            ])
+            [
+                'success' => true,
+                'message' => 'Product updated successfully',
+                'data'    => $product->fresh()->load(['bakery', 'discountEvent']),
+            ],
+            200
         );
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, string $id)
+    public function destroy(Request $request, $id)
     {
         $product = Product::with('bakery:id,user_id')->findOrFail($id);
 

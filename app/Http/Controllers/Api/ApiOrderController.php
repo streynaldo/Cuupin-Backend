@@ -87,6 +87,7 @@ class ApiOrderController extends Controller
             'total_purchased_price' => 0,
             'total_refunded_price' => 0,
             'reference_id' => $referenceId,
+            'expired_at' => now()->addMinutes(10),
             'status' => $waiting ? 'WAITING' : 'ONPROGRESS'
         ]);
 

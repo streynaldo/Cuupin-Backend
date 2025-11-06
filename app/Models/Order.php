@@ -20,6 +20,9 @@ class Order extends Model
         'payment_session_url'
     ];
 
+    protected $casts = ['expired_at' => 'datetime'];
+
+
     // === Relations ===
     public function user()
     {

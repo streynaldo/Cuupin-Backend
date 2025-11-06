@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\BakeryWallet;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use App\Actions\Xendit\PaymentAction;
 
 class XenditPaymentController extends Controller
@@ -28,11 +29,15 @@ class XenditPaymentController extends Controller
         ];
 
         $data = Order::where('reference_id', $payload['reference_id'])->first();
-
-        if ($data->expired_at < now()) {
+        if (!$data) {
+            return response()->json(['message' => 'No Order Found']);
+        }
+        if ($data->expired_at > now()) {
             $res = $pa->createPaymentSession($order);
             $data->payment_session_url = $res['payment_link_url'];
-            $data->expired_at = $res['expires_at'];
+            $data->expired_at = Carbon::parse($res['expires_at'])
+                ->setTimezone('Asia/Jakarta')
+                ->toDateTimeString();
             $data->save();
 
             return response()->json($res);

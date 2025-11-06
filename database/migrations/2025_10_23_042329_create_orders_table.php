@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('reference_id');
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('bakery_id')->constrained('bakeries')->cascadeOnDelete();
-            $table->date('expired_at')->default(now()->addMinutes(2))->nullable();
+            $table->timestamp('expired_at')->nullable();
             $table->text('payment_session_url')->nullable()->default(null);
             $table->timestamps();
             $table->index(['user_id', 'bakery_id', 'status']);

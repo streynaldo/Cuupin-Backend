@@ -84,6 +84,7 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware(['auth:sanctum', 'abilities:bakeries:read'])->group(function (){
         Route::get('/bakerybyid', [ApiBakeryController::class, 'getBakeryByUserId']);
+        Route::get('/bakeries/{bakeryId}/events', [ApiDiscountEventController::class, 'getEventsByBakeryId']);
     });
 
     // read: login + ability wallet

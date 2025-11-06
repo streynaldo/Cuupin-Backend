@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
+use App\Models\BakeryWallet;
 use Illuminate\Http\Request;
 use App\Actions\Xendit\PaymentAction;
-use App\Models\BakeryWallet;
 
 class XenditPaymentController extends Controller
 {
@@ -26,9 +27,18 @@ class XenditPaymentController extends Controller
             // items bisa dikirim via JSON body atau query (string JSON)
         ];
 
-        $res = $pa->createPaymentSession($order);
+        $data = Order::where('reference_id', $payload['reference_id'])->first();
 
-        return response()->json($res);
+        if ($data->expired_at < now()) {
+            $res = $pa->createPaymentSession($order);
+            $data->payment_session_url = $res['payment_link_url'];
+            $data->expired_at = $res['expires_at'];
+            $data->save();
+
+            return response()->json($res);
+        } else {
+            return response()->json(['message' => 'Order time expired']);
+        }
     }
     public function cancelSession(PaymentAction $pa, $sessionId)
     {

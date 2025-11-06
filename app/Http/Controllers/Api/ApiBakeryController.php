@@ -143,14 +143,13 @@ class ApiBakeryController extends Controller
             'name'              => ['sometimes', 'string', 'max:150'],
             'description'       => ['sometimes', 'nullable', 'string'],
             // ganti dari url → file image
-            'logo'              => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'banner'            => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144'],
+            'logo_url'          => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'banner_url'        => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144'],
             'address'           => ['sometimes', 'nullable', 'string', 'max:255'],
             'latitude'          => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
             'longitude'         => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
             'contact_info'      => ['sometimes', 'nullable', 'string', 'max:100'],
             'is_active'         => ['sometimes', 'boolean'],
-            'discount_status'   => ['sometimes', 'nullable', 'string', 'in:active,inactive'],
         ]);
 
         // handle logo baru

@@ -47,7 +47,7 @@ class ApiOrderController extends Controller
         $bakery = Bakery::findOrFail($bakeryId);
 
         $query = Order::where('bakery_id', $bakery->id)
-            ->with(['items', 'bakery'])
+            ->with(['items', 'bakery', 'user'])
             ->orderByDesc('created_at')
             ->get();
 

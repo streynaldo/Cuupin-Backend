@@ -23,12 +23,12 @@ class ApiProductController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        return response()->json($products, 200);
-        // return response()->json([
-        //     'success' => true,
-        //     'message' => 'Product list retrieved successfully',
-        //     'data'    => $products
-        // ], 200);
+        // return response()->json($products, 200);
+        return response()->json([
+            'success' => true,
+            'message' => 'Product list retrieved successfully',
+            'data'    => $products
+        ], 200);
     }
 
     /**

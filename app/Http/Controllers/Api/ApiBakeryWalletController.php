@@ -27,7 +27,7 @@ class ApiBakeryWalletController extends Controller
 
         return response()->json([
             'bakery' => $bakery->only(['id', 'name']),
-            'wallet' => $wallet->only(['id', 'total_wallet', 'total_earned', 'total_withdrawn','no_rekening']),
+            'wallet' => $wallet,
         ]);
     }
 

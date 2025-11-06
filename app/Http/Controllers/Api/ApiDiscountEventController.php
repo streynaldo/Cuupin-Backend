@@ -37,6 +37,7 @@ class ApiDiscountEventController extends Controller
             'discount_photo'      => ['nullable', 'url'],
             'discount_start_time' => ['required', 'date'],
             'discount_end_time'   => ['required', 'date', 'after:discount_start_time'],
+            'bakery_id'             => ['required', 'exists:bakeries,id']
         ]);
 
         $data['discount_start_time'] = Carbon::parse($data['discount_start_time']);
@@ -64,6 +65,18 @@ class ApiDiscountEventController extends Controller
         }
 
         return response()->json($row);
+    }
+
+    public function getEventsByBakeryId(string $bakeryId)
+    {
+        $events = DiscountEvent::where('bakery_id', $bakeryId)->get();
+        if (!$events) {
+            return response()->json(['message' => 'Discount Events Not Found']);
+        }
+        return response()->json([
+            'message' => 'Discount Events Sucessfully Retrieved',
+            'data'  =>  $events
+        ]);
     }
 
     /**

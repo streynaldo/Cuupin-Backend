@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Bakery;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Arr;
 
 class BakeryWalletSeeder extends Seeder
 {
@@ -13,15 +14,20 @@ class BakeryWalletSeeder extends Seeder
      */
     public function run(): void
     {
-        Bakery::doesntHave('wallet')->get()->each(function ($bakery) {
-            $bakery->wallet()->create([
-                'total_wallet' => 0,
-                'total_earned' => 0,
-                'total_withdrawn' => 0,
-                'no_rekening' => $this->generateAccountNumber(),
-                'nama_bank' => 'ID_BCA',
-                'nama_pemilik' => array_rand(['John Doe', 'Jane Smith', 'Alice Johnson', 'Bob Brown']),
-            ]);
+        $owners = ['John Doe', 'Jane Smith', 'Alice Johnson', 'Bob Brown'];
+        $banks = ['ID_BCA', 'ID_MANDIRI', 'ID_BRI', 'ID_BNI'];
+
+        Bakery::doesntHave('wallet')->chunkById(100, function ($bakeries) use ($owners, $banks) {
+            foreach ($bakeries as $bakery) {
+                $bakery->wallet()->create([
+                    'total_wallet'    => 0,
+                    'total_earned'    => 0,
+                    'total_withdrawn' => 0,
+                    'no_rekening'     => $this->generateAccountNumber(),
+                    'nama_bank'       => Arr::random($banks),
+                    'nama_pemilik'    => Arr::random($owners),
+                ]);
+            }
         });
     }
 

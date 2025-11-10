@@ -125,9 +125,9 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware(['auth:sanctum', 'abilities:orders:create,orders:read'])->group(function () {
+        Route::get('/order/ref/{refId}', [ApiOrderController::class, 'show']);
         Route::post('/order', [ApiOrderController::class, 'store']);
         Route::get('/order', [ApiOrderController::class, 'index']);
-        Route::get('/order/{refId}/show', [ApiOrderController::class, 'show']);
     });
     Route::middleware(['auth:sanctum', 'abilities:orders:update'])->group(function () {
         Route::patch('/order/{id}', [ApiOrderController::class, 'confirmation']);

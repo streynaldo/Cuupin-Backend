@@ -127,7 +127,7 @@ class ApiOrderController extends Controller
     public function show(Request $request, string $refId)
     {
         $user = $request->user();
-        $order = Order::findOrFail($refId,'reference_id')->with('items');
+        $order = Order::where('reference_id', $refId)->with('items')->first();
         if ($order->user_id == $user->id) {
             return response()->json($order);
         } else {

@@ -127,6 +127,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'abilities:orders:create,orders:read'])->group(function () {
         Route::post('/order', [ApiOrderController::class, 'store']);
         Route::get('/order', [ApiOrderController::class, 'index']);
+        Route::get('/order/{refId}/show', [ApiOrderController::class, 'show']);
     });
     Route::middleware(['auth:sanctum', 'abilities:orders:update'])->group(function () {
         Route::patch('/order/{id}', [ApiOrderController::class, 'confirmation']);
@@ -140,15 +141,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/me', fn(Request $r) => $r->user());
     });
 
-    Route::middleware(['auth:sanctum', 'abilities:orders:create,orders:read'])->group(function () {
-        Route::post('/order', [ApiOrderController::class, 'store']);
-        Route::get('/order', [ApiOrderController::class, 'index']);
-    });
     Route::middleware(['auth:sanctum', 'abilities:orders:read'])->group(function () {
         Route::get('/order/{bakeryId}', [ApiOrderController::class, 'getAllOrderByBakeryId']);
     });
-
-    Route::get('/order/{refId}/show', [ApiOrderController::class, 'show']);
     Route::middleware(['auth:sanctum', 'abilities:orders:update'])->group(function () {
         Route::patch('/order/{id}', [ApiOrderController::class, 'confirmation']);
         Route::patch('/order/{id}/pickup', [ApiOrderController::class, 'update']);

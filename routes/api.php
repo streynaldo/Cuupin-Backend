@@ -82,7 +82,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/discount-events', [ApiDiscountEventController::class, 'index']);
     Route::get('/discount-events/{id}', [ApiDiscountEventController::class, 'show'])->whereNumber('id');
 
-    Route::middleware(['auth:sanctum', 'abilities:bakeries:read'])->group(function (){
+    Route::middleware(['auth:sanctum', 'abilities:bakeries:read'])->group(function () {
         Route::get('/bakerybyid', [ApiBakeryController::class, 'getBakeryByUserId']);
         Route::get('/bakeries/{bakeryId}/events', [ApiDiscountEventController::class, 'getEventsByBakeryId']);
     });
@@ -98,22 +98,30 @@ Route::prefix('v1')->group(function () {
         Route::post('/bakeries', [ApiBakeryController::class, 'store']);
         Route::put('/bakeries/{id}', [ApiBakeryController::class, 'update'])->whereNumber('id');
         Route::delete('/bakeries/{id}', [ApiBakeryController::class, 'destroy'])->whereNumber('id');
+
+        // endpoint khusus foto:
+        Route::post('/bakeries/{id}/logo',   [ApiBakeryController::class, 'updateLogo'])->whereNumber('id');
+        Route::post('/bakeries/{id}/banner', [ApiBakeryController::class, 'updateBanner'])->whereNumber('id');
+
+        // activate/deactivate bakery status
+        Route::patch('/bakeries/{id}/activate',  [ApiBakeryController::class, 'activate'])->whereNumber('id');
+        Route::patch('/bakeries/{id}/deactivate', [ApiBakeryController::class, 'deactivate'])->whereNumber('id');
     });
+
     // write: login + ability operating hours
     Route::middleware(['auth:sanctum', 'abilities:operating-hours:write'])->group(function () {
         Route::post('/bakeries/{id}/hours', [ApiOperatingHourController::class, 'store'])->whereNumber('id');
         Route::put('/operating-hours/{id}', [ApiOperatingHourController::class, 'update'])->whereNumber('id');
         Route::delete('/operating-hours/{id}', [ApiOperatingHourController::class, 'destroy'])->whereNumber('id');
-        // activate/deactivate bakery status
-        Route::patch('/bakeries/{id}/activate',  [ApiBakeryController::class, 'activate'])->whereNumber('id');
-        Route::patch('/bakeries/{id}/deactivate', [ApiBakeryController::class, 'deactivate'])->whereNumber('id');
     });
+
     // write: login + ability products
     Route::middleware(['auth:sanctum', 'abilities:products:write'])->group(function () {
         Route::post('/products', [ApiProductController::class, 'store']);
         Route::put('/products/{id}', [ApiProductController::class, 'update'])->whereNumber('id');
         Route::delete('/products/{id}', [ApiProductController::class, 'destroy'])->whereNumber('id');
     });
+
     // write: login + ability discounts
     Route::middleware(['auth:sanctum', 'abilities:discounts:write'])->group(function () {
         Route::post('/discount-events', [ApiDiscountEventController::class, 'store']);

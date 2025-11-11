@@ -129,63 +129,89 @@ class ApiBakeryController extends Controller
     }
 
     /**
-     * PUT /bakeries/{id}  (butuh login + ability)
+     * PUT /bakeries/{id}  (butuh login + ability + tanpa file)
      */
+
     public function update(Request $request, $id)
     {
         $bakery = Bakery::find($id);
-        if (! $bakery) {
-            return response()->json(['message' => 'Bakery not found'], 404);
-        }
+        if (! $bakery) return response()->json(['message' => 'Bakery not found'], 404);
         $this->authorizeOwnerOrAdmin($request->user(), $bakery);
 
         $data = $request->validate([
             'name'         => ['sometimes', 'string', 'max:150'],
             'description'  => ['sometimes', 'nullable', 'string'],
-            'logo_url'     => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'banner_url'   => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144'],
             'address'      => ['sometimes', 'nullable', 'string', 'max:255'],
             'latitude'     => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
             'longitude'    => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
             'contact_info' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'discount_status' => ['sometimes', 'nullable', 'in:active,inactive'],
             'is_active'    => ['sometimes', 'boolean'],
         ]);
 
-        // logo
-        if ($request->hasFile('logo_url')) {
-            if (!empty($bakery->logo_url)) {
-                $old = ltrim(str_replace('/storage/', '', parse_url($bakery->logo_url, PHP_URL_PATH) ?? ''), '/');
-                if ($old !== '') Storage::disk('public')->delete($old);
-            }
-            $path = $request->file('logo_url')->store('bakery_logos', 'public');
-            $data['logo_url'] = url(Storage::url($path));
-        }
-
-        // banner
-        if ($request->hasFile('banner_url')) {
-            if (!empty($bakery->banner_url)) {
-                $old = ltrim(str_replace('/storage/', '', parse_url($bakery->banner_url, PHP_URL_PATH) ?? ''), '/');
-                if ($old !== '') Storage::disk('public')->delete($old);
-            }
-            $path = $request->file('banner_url')->store('bakery_banners', 'public');
-            $data['banner_url'] = url(Storage::url($path));
-        }
-
-        $bakery->update([
-            'name'            => $data['name']             ?? $bakery->name,
-            'description'     => array_key_exists('description', $data)   ? $data['description']   : $bakery->description,
-            'logo_url'        => array_key_exists('logo_url', $data)      ? $data['logo_url']      : $bakery->logo_url,
-            'banner_url'      => array_key_exists('banner_url', $data)    ? $data['banner_url']    : $bakery->banner_url,
-            'address'         => array_key_exists('address', $data)       ? $data['address']       : $bakery->address,
-            'latitude'        => array_key_exists('latitude', $data)      ? $data['latitude']      : $bakery->latitude,
-            'longitude'       => array_key_exists('longitude', $data)     ? $data['longitude']     : $bakery->longitude,
-            'contact_info'    => array_key_exists('contact_info', $data)  ? $data['contact_info']  : $bakery->contact_info,
-            'is_active'       => array_key_exists('is_active', $data)     ? (bool) $data['is_active'] : $bakery->is_active,
-        ]);
+        $bakery->update($data);
 
         return response()->json([
             'success' => true,
-            'message' => 'Bakery updated successfully',
+            'message' => 'Bakery info updated',
+            'data'    => $bakery->fresh(),
+        ], 200);
+    }
+
+    // UPDATE LOGO (khusus file)
+    public function updateLogo(Request $request, $id)
+    {
+        $bakery = Bakery::find($id);
+        if (! $bakery) return response()->json(['message' => 'Bakery not found'], 404);
+        $this->authorizeOwnerOrAdmin($request->user(), $bakery);
+
+        $request->validate([
+            'logo_url' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2004'],
+        ]);
+
+        // hapus lama kalau ada
+        if (!empty($bakery->logo_url)) {
+            $old = ltrim(str_replace('/storage/', '', parse_url($bakery->logo_url, PHP_URL_PATH) ?? ''), '/');
+            if ($old !== '') Storage::disk('public')->delete($old);
+        }
+
+        $path = $request->file('logo_url')->store('bakery_logos', 'public');
+        $logoUrl = url(Storage::url($path));
+
+        $bakery->update(['logo_url' => $logoUrl]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bakery logo updated',
+            'data'    => $bakery->fresh(),
+        ], 200);
+    }
+
+    // UPDATE BANNER (khusus file)
+    public function updateBanner(Request $request, $id)
+    {
+        $bakery = Bakery::find($id);
+        if (! $bakery) return response()->json(['message' => 'Bakery not found'], 404);
+        $this->authorizeOwnerOrAdmin($request->user(), $bakery);
+
+        $request->validate([
+            'banner_url' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4144'],
+        ]);
+
+        // hapus lama kalau ada
+        if (!empty($bakery->banner_url)) {
+            $old = ltrim(str_replace('/storage/', '', parse_url($bakery->banner_url, PHP_URL_PATH) ?? ''), '/');
+            if ($old !== '') Storage::disk('public')->delete($old);
+        }
+
+        $path = $request->file('banner_url')->store('bakery_banners', 'public');
+        $bannerUrl = url(Storage::url($path));
+
+        $bakery->update(['banner_url' => $bannerUrl]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bakery banner updated',
             'data'    => $bakery->fresh(),
         ], 200);
     }

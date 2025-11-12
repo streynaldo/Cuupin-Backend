@@ -120,7 +120,7 @@ class XenditWebhookController extends Controller
             $bakery = Bakery::where('id', $bakeryId)->first();
             $bakeryWallet = BakeryWallet::where('bakery_id', $bakery->id)->first();
 
-            $bakeryWallet->total_wallet -= $data['amount'];
+            $bakeryWallet->total_wallet = 0;
             $bakeryWallet->total_withdrawn += $data['amount'];
             $bakeryWallet->save();
 

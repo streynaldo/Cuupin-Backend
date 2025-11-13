@@ -7,6 +7,9 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use App\Models\Bakery;
+use App\Models\BakeryWallet;
 
 class AuthController extends Controller
 {
@@ -17,25 +20,73 @@ class AuthController extends Controller
             'email'    => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
             'role'     => ['nullable', 'in:admin,owner,customer'],
+            'bakery_name'         => ['required_if:role,owner', 'string', 'max:150'],
+            'bakery_contact_info' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role'     => $data['role'] ?? 'customer',
-        ]);
+        // bikin semuanya dalam 1 transaksi biar atomic
+        return DB::transaction(function () use ($data) {
+            // 1) Buat user
+            $role = $data['role'] ?? 'customer';
+            $user = User::create([
+                'name'     => $data['name'],
+                'email'    => $data['email'],
+                'password' => Hash::make($data['password']),
+                'role'     => $role,
+            ]);
+            $bakery = null;
+            $wallet = null;
+            // 2) Kalau owner → auto buat bakery & wallet
+            if ($role === 'owner') {
+                $bakery = Bakery::create([
+                    'user_id'        => $user->id,
+                    'name'           => $data['bakery_name'],
+                    'description'    => $data['bakery_description'] ?? null,
+                    'address'        => $data['bakery_address'] ?? null,
+                    'contact_info'   => $data['bakery_contact_info'] ?? null,
+                    'discount_status' => 'inactive',
+                    'is_active'      => false,
+                ]);
 
-        // optional: langsung login pakai abilities sesuai role
-        $abilities = $this->abilitiesForRole($user->role);
-        $token = $user->createToken('api', $abilities)->plainTextToken;
-
-        return response()->json([
-            'token'     => $token,
-            'user'      => $user,
-            'role'      => $user->role,
-            'abilities' => $abilities,
-        ], 201);
+                $wallet = BakeryWallet::create([
+                    'bakery_id'       => $bakery->id,
+                    'total_wallet'    => 0,
+                    'total_earned'    => 0,
+                    'total_withdrawn' => 0,
+                    'no_rekening'     => null,
+                ]);
+            }
+            // 3) Generate token + abilities
+            $abilities = $this->abilitiesForRole($user->role);
+            $token = $user->createToken('api', $abilities)->plainTextToken;
+            // 4) Return response
+            if ($role === 'owner') {
+                $payload = [
+                    'success' => true,
+                    'message' => 'User and Bakery created successfully',
+                    'token' => $token,
+                    'data'  => [
+                        'user'      => $user,
+                        'role'      => $user->role,
+                        'abilities' => $abilities,
+                        'bakery'    => $bakery,
+                        'wallet'    => $wallet,
+                    ],
+                ];
+            } else {
+                $payload = [
+                    'success' => true,
+                    'message' => 'User created successfully',
+                    'token' => $token,
+                    'data'  => [
+                        'user'      => $user,
+                        'role'      => $user->role,
+                        'abilities' => $abilities,
+                    ],
+                ];
+            }
+            return response()->json($payload, 201);
+        });
     }
 
     public function login(Request $request)

@@ -106,13 +106,13 @@ class ApiProductController extends Controller
         $products = Product::where('bakery_id', $id)
             ->orderByDesc('id')->get();
 
-        if ($products->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No products found for this bakery',
-                'products' => []
-            ], 404);
-        }
+        // if ($products->isEmpty()) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'No products found for this bakery',
+        //         'products' => $products
+        //     ], 200);
+        // }
 
         return response()->json([
             'success' => true,

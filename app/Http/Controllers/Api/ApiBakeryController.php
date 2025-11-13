@@ -64,7 +64,10 @@ class ApiBakeryController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Bakery & wallet created successfully',
-                'data' => [$bakery, $wallet],
+                'data' => [
+                    'bakery' => $bakery,
+                    'wallet' => $wallet
+                ],
             ], 201);
         } catch (QueryException $e) {
             return response()->json(['message' => 'Failed to create bakery'], 500);

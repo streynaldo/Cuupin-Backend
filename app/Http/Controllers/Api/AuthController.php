@@ -119,31 +119,46 @@ class AuthController extends Controller
     public function update(Request $request)
     {
         $user = $request->user();
+
         if (! $user) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
         $data = $request->validate([
-            'name' => ['sometimes', 'string', 'max:100'],
+            'name'  => ['sometimes', 'string', 'max:100'],
+
+            // email opsional, tapi kalau diisi harus unik (kecuali email user sendiri)
+            'email' => [
+                'sometimes',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+
+            // hanya wajib kalau mau ganti password
             'current_password' => ['required_with:password', 'current_password'],
+
             'password' => [
                 'sometimes',
                 'confirmed',
+                'min:8',
             ],
         ]);
 
-        // Build field yang akan diupdate
         $updates = [];
 
         if (array_key_exists('name', $data)) {
             $updates['name'] = $data['name'];
         }
 
+        if (array_key_exists('email', $data)) {
+            $updates['email'] = $data['email'];
+        }
+
         if (array_key_exists('password', $data)) {
             $updates['password'] = Hash::make($data['password']);
         }
 
-        // Jika tidak ada perubahan
         if (empty($updates)) {
             return response()->json([
                 'success' => true,
@@ -163,13 +178,16 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        // user() mengembalikan instance App\Models\User untuk token yang dipakai
+        // user() mengembalikan instance User untuk token yang dipakai
         $request->user()->currentAccessToken()->delete();
-
-        // Kalau mau logout dari SEMUA device/token:
-        // $request->user()->tokens()->delete();
-
         return response()->json(['message' => 'Successfully logged out'], 200);
+    }
+
+    public function logoutAllDevices(Request $request)
+    {
+        // Kalau mau logout dari SEMUA device/token:
+        $request->user()->tokens()->delete();
+        return response()->json(['message' => 'Successfully logged out from all devices'], 200);
     }
 
     // tentukan abilities berdasarkan role

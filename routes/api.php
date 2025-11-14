@@ -154,7 +154,6 @@ Route::prefix('v1')->group(function () {
     });
     Route::middleware(['auth:sanctum', 'abilities:orders:update'])->group(function () {
         Route::patch('/order/{id}', [ApiOrderController::class, 'confirmation']);
-        Route::patch('/order/{id}/pickup', [ApiOrderController::class, 'update']);
     });
 
     // other protected

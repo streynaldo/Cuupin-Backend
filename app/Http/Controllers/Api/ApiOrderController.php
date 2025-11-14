@@ -157,10 +157,9 @@ class ApiOrderController extends Controller
     public function update(Request $request, string $id)
     {
         $user = $request->user();
-        $order = Order::with(['items', 'bakery'])->where('reference_id', $id)->first();
-        dd($order);
+        $order = Order::with('items')->where('reference_id', $id)->first();
 
-        if ($order->bakery->user_id !== $user->id) {
+        if ($order->user_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 

@@ -136,10 +136,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/order/ref/{refId}', [ApiOrderController::class, 'show']);
         Route::post('/order', [ApiOrderController::class, 'store']);
         Route::get('/order', [ApiOrderController::class, 'index']);
+        Route::patch('/order/{id}/pickup', [ApiOrderController::class, 'update']);
     });
     Route::middleware(['auth:sanctum', 'abilities:orders:update'])->group(function () {
         Route::patch('/order/{id}', [ApiOrderController::class, 'confirmation']);
-        Route::patch('/order/{id}/pickup', [ApiOrderController::class, 'update']);
         Route::get('/order/{bakeryId}/{Id}', [ApiOrderController::class, 'showByBakeryId']);
     });
 

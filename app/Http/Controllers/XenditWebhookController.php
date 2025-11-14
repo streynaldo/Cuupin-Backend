@@ -131,6 +131,22 @@ class XenditWebhookController extends Controller
             ]);
             return response()->json(['status' => 'Payout Success', 'data' => $walletTransaction], 200);
         }
+        if (str_starts_with($event, 'payout.failed')) {
+            $bakeryId = $data['metadata']['bakery_id'] ?? null;
+            $bakery = Bakery::where('id', $bakeryId)->first();
+            $bakeryWallet = BakeryWallet::where('bakery_id', $bakery->id)->first();
+
+            $bakeryWallet->total_wallet = $data['amount'];
+            // $bakeryWallet->total_withdrawn += $data['amount'];
+            $bakeryWallet->save();
+
+            // $walletTransaction = WalletTransaction::create([
+            //     'bakery_wallet_id' => $bakeryWallet->id,
+            //     'amount' => $data['amount'],
+            //     'reference_id' => $data['reference_id']
+            // ]);
+            return response()->json(['status' => 'Payout Failed', 'data' => $bakeryWallet], 200);
+        }
 
         Log::info('Unhandled Xendit event', ['event' => $event]);
         return response()->json(['status' => 'Walawee']);

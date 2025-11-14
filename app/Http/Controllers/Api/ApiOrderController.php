@@ -158,6 +158,7 @@ class ApiOrderController extends Controller
     {
         $user = $request->user();
         $order = Order::with(['items', 'bakery'])->where('reference_id', $id)->first();
+        dd($order);
 
         if ($order->bakery->user_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 401);

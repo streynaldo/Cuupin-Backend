@@ -105,8 +105,8 @@ class XenditPaymentController extends Controller
             'bakery_id' => $validated['bakery_id'],
         ]);
 
-        $bakeryWallet->total_wallet = 0;
-        $bakeryWallet->save();
+        // $bakeryWallet->total_wallet = 0;
+        // $bakeryWallet->save();
 
         return response()->json(['status' => 'Payout Success', 'data' => $res], 200);
     }

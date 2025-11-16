@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Bakery;
-use App\Models\BakeryWallet;
 use App\Models\Payment;
-use App\Models\WalletTransaction;
+use App\Models\DeviceToken;
+use App\Models\BakeryWallet;
 use Illuminate\Http\Request;
+use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use App\Services\Firebase\FcmV1Service;
 
 class XenditWebhookController extends Controller
 {
@@ -129,6 +131,64 @@ class XenditWebhookController extends Controller
                 'amount' => $data['amount'],
                 'reference_id' => $data['reference_id']
             ]);
+
+            // --- send push notif to bakery owner devices ---
+            try {
+                // determine owner user
+                $owner = null;
+                if (method_exists($bakery, 'user') && $bakery->relationLoaded('user')) {
+                    $owner = $bakery->user;
+                } elseif (method_exists($bakery, 'user')) {
+                    $owner = $bakery->user()->first();
+                } elseif (!empty($bakery->user_id)) {
+                    $owner = \App\Models\User::find($bakery->user_id);
+                }
+
+                if ($owner) {
+                    // get tokens
+                    $tokens = DeviceToken::where('user_id', $owner->id)
+                        ->pluck('token')
+                        ->filter(fn($t) => !empty($t))
+                        ->unique()
+                        ->toArray();
+
+                    if (!empty($tokens)) {
+                        $fcm = app(FcmV1Service::class);
+
+                        $title = "Payout Succeeded";
+                        $body  = "Payout succeeded, Rp " . number_format($data['amount'], 0, ',', '.') . " sent.";
+
+                        $notification = ['title' => $title, 'body' => $body];
+                        $payloadData = [
+                            'type' => 'payout_succeeded',
+                            'bakery_id' => (string) $bakery->id,
+                            'amount' => (string) $data['amount'],
+                            'transaction_ref' => (string) $data['reference_id'],
+                        ];
+
+                        $results = $fcm->sendToTokens($tokens, $notification, $payloadData, app('log'));
+
+                        // cleanup invalid tokens basic heuristic
+                        foreach ($results as $token => $res) {
+                            if (isset($res['status']) && in_array($res['status'], [400, 404, 410])) {
+                                // try to detect not found / unregistered
+                                $reason = $res['body']['error']['message'] ?? $res['body']['error']['status'] ?? null;
+                                DeviceToken::where('token', $token)->delete();
+                                Log::info('Deleted invalid device token', ['token' => $token, 'reason' => $reason]);
+                            } elseif (isset($res['error']) && !isset($res['status'])) {
+                                // network/other error - keep token and log
+                                Log::warning('FCM send error (no status)', ['token' => $token, 'error' => $res['error']]);
+                            }
+                        }
+                    } else {
+                        Log::info('No device tokens found for bakery owner', ['owner_id' => $owner->id]);
+                    }
+                } else {
+                    Log::warning('Bakery owner not found to notify', ['bakery_id' => $bakery->id]);
+                }
+            } catch (\Throwable $e) {
+                Log::error('Failed to send payout notification', ['error' => $e->getMessage()]);
+            }
             return response()->json(['status' => 'Payout Success', 'data' => $walletTransaction], 200);
         }
         if (str_starts_with($event, 'payout.failed')) {

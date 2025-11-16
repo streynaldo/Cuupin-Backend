@@ -1,19 +1,20 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\BakeryController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\DeviceTokenController;
+use App\Http\Controllers\Api\ApiOrderController;
 use App\Http\Controllers\Api\ApiBakeryController;
+// use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\XenditPaymentController;
+use App\Http\Controllers\XenditWebhookController;
+use App\Http\Controllers\Api\ApiProductController;
 use App\Http\Controllers\Api\ApiBakeryWalletController;
 use App\Http\Controllers\Api\ApiDiscountEventController;
 use App\Http\Controllers\Api\ApiOperatingHourController;
-use App\Http\Controllers\Api\ApiOrderController;
-use App\Http\Controllers\Api\ApiProductController;
-use App\Http\Controllers\XenditPaymentController;
-use Illuminate\Support\Facades\Route;
-// use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\XenditWebhookController;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\BakeryController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 Route::get('/', function () {
     return response()->json(['message' => 'Welcome to Cuupin API']);
@@ -159,6 +160,8 @@ Route::prefix('v1')->group(function () {
 
     // other protected
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
+        Route::delete('/device-tokens', [DeviceTokenController::class, 'destroy']);
         Route::put('/auth/user', [AuthController::class, 'update']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/user', fn(Request $r) => $r->user());

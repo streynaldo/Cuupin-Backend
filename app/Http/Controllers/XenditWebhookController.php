@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Order;
 use App\Models\Bakery;
 use App\Models\Payment;
@@ -12,6 +13,8 @@ use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use App\Services\Firebase\FcmV1Service;
+
+use function Laravel\Prompts\error;
 
 class XenditWebhookController extends Controller
 {
@@ -50,7 +53,7 @@ class XenditWebhookController extends Controller
                 return response()->json(['status' => 'no reference_id'], 402);
             }
 
-            $order = Order::where('reference_id', $referenceId)->first();
+            $order = Order::with('bakery')->where('reference_id', $referenceId)->first();
             if (!$order) {
                 Log::warning('Order not found', ['reference_id' => $referenceId]);
                 return response()->json(['status' => 'order not found'], 402);
@@ -63,6 +66,94 @@ class XenditWebhookController extends Controller
                 Log::info('Order marked PAID', ['order_id' => $order->id, 'reference_id' => $referenceId]);
             } else {
                 Log::info('Payment completed event with non-success status', ['status' => $status]);
+            }
+
+            try {
+                $user = User::where('id', $order->user_id)->get();
+                if ($user) {
+                    $tokens = DeviceToken::where('user_id', $user->id)
+                        ->pluck('token')
+                        ->filter(fn($t) => !empty($t))
+                        ->unique()
+                        ->toArray();
+                    if (!empty($tokens)) {
+                        $fcm = app(FcmV1Service::class);
+
+                        $title = "Order Cancelled";
+                        $body  = "Your payment failed.";
+
+                        $notification = ['title' => $title, 'body' => $body];
+                        $payloadData = [
+                            'type' => 'cancelled_order',
+                            'user_id' => (string) $user->id,
+                            'amount' => (string) $data['amount'],
+                            'transaction_ref' => (string) $data['reference_id'],
+                        ];
+
+                        $results = $fcm->sendToTokens($tokens, $notification, $payloadData, app('log'));
+
+                        // cleanup invalid tokens basic heuristic
+                        foreach ($results as $token => $res) {
+                            if (isset($res['status']) && in_array($res['status'], [400, 404, 410])) {
+                                // try to detect not found / unregistered
+                                $reason = $res['body']['error']['message'] ?? $res['body']['error']['status'] ?? null;
+                                DeviceToken::where('token', $token)->delete();
+                                Log::info('Deleted invalid device token', ['token' => $token, 'reason' => $reason]);
+                            } elseif (isset($res['error']) && !isset($res['status'])) {
+                                // network/other error - keep token and log
+                                Log::warning('FCM send error (no status)', ['token' => $token, 'error' => $res['error']]);
+                            }
+                        }
+                    } else {
+                        Log::info('No device tokens found for user', ['user_id' => $user->id]);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error('Failed to send cancel notification', ['error' => $e->getMessage()]);
+            }
+
+            try {
+                $owner = User::where('id', $order->bakery->user_id)->get();
+                if ($owner) {
+                    $tokens = DeviceToken::where('user_id', $owner->id)
+                        ->pluck('token')
+                        ->filter(fn($t) => !empty($t))
+                        ->unique()
+                        ->toArray();
+                    if (!empty($tokens)) {
+                        $fcm = app(FcmV1Service::class);
+
+                        $title = "New Order Placed";
+                        $body  = "You just got new order, tralallaa";
+
+                        $notification = ['title' => $title, 'body' => $body];
+                        $payloadData = [
+                            'type' => 'new_order',
+                            'user_id' => (string) $user->id,
+                            'amount' => (string) $data['amount'],
+                            'transaction_ref' => (string) $data['reference_id'],
+                        ];
+
+                        $results = $fcm->sendToTokens($tokens, $notification, $payloadData, app('log'));
+
+                        // cleanup invalid tokens basic heuristic
+                        foreach ($results as $token => $res) {
+                            if (isset($res['status']) && in_array($res['status'], [400, 404, 410])) {
+                                // try to detect not found / unregistered
+                                $reason = $res['body']['error']['message'] ?? $res['body']['error']['status'] ?? null;
+                                DeviceToken::where('token', $token)->delete();
+                                Log::info('Deleted invalid device token', ['token' => $token, 'reason' => $reason]);
+                            } elseif (isset($res['error']) && !isset($res['status'])) {
+                                // network/other error - keep token and log
+                                Log::warning('FCM send error (no status)', ['token' => $token, 'error' => $res['error']]);
+                            }
+                        }
+                    } else {
+                        Log::info('No device tokens found for user', ['user_id' => $user->id]);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error('Failed to send cancel notification', ['error' => $e->getMessage()]);
             }
 
             return response()->json([
@@ -89,6 +180,50 @@ class XenditWebhookController extends Controller
             $order->status = 'CANCELLED';
             $order->save();
 
+            try {
+                $user = User::where('id', $order->user_id)->get();
+                if ($user) {
+                    $tokens = DeviceToken::where('user_id', $user->id)
+                        ->pluck('token')
+                        ->filter(fn($t) => !empty($t))
+                        ->unique()
+                        ->toArray();
+                    if (!empty($tokens)) {
+                        $fcm = app(FcmV1Service::class);
+
+                        $title = "Order Cancelled";
+                        $body  = "Your payment failed.";
+
+                        $notification = ['title' => $title, 'body' => $body];
+                        $payloadData = [
+                            'type' => 'cancelled_order',
+                            'user_id' => (string) $user->id,
+                            'amount' => (string) $data['amount'],
+                            'transaction_ref' => (string) $data['reference_id'],
+                        ];
+
+                        $results = $fcm->sendToTokens($tokens, $notification, $payloadData, app('log'));
+
+                        // cleanup invalid tokens basic heuristic
+                        foreach ($results as $token => $res) {
+                            if (isset($res['status']) && in_array($res['status'], [400, 404, 410])) {
+                                // try to detect not found / unregistered
+                                $reason = $res['body']['error']['message'] ?? $res['body']['error']['status'] ?? null;
+                                DeviceToken::where('token', $token)->delete();
+                                Log::info('Deleted invalid device token', ['token' => $token, 'reason' => $reason]);
+                            } elseif (isset($res['error']) && !isset($res['status'])) {
+                                // network/other error - keep token and log
+                                Log::warning('FCM send error (no status)', ['token' => $token, 'error' => $res['error']]);
+                            }
+                        }
+                    } else {
+                        Log::info('No device tokens found for user', ['user_id' => $user->id]);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error('Failed to send cancel notification', ['error' => $e->getMessage()]);
+            }
+
             return response()->json(['status' => 'Order Cancelled', 'order' => $order], 200);
         }
 
@@ -106,8 +241,95 @@ class XenditWebhookController extends Controller
             if (in_array($status, ['COMPLETED', 'SUCCEEDED', 'PAID', 'CAPTURED'])) {
                 if ($order->total_purchased_price == $order->total_refunded_price) {
                     $order->status = 'CANCELLED';
+                    try {
+                        $user = User::where('id', $order->user_id)->get();
+                        if ($user) {
+                            $tokens = DeviceToken::where('user_id', $user->id)
+                                ->pluck('token')
+                                ->filter(fn($t) => !empty($t))
+                                ->unique()
+                                ->toArray();
+                            if (!empty($tokens)) {
+                                $fcm = app(FcmV1Service::class);
+
+                                $title = "Refund Succeeded";
+                                $body  = "Order totally refunded, Rp " . number_format($data['amount'], 0, ',', '.') . " refunded.";
+
+                                $notification = ['title' => $title, 'body' => $body];
+                                $payloadData = [
+                                    'type' => 'refund_succeeded',
+                                    'user_id' => (string) $user->id,
+                                    'amount' => (string) $data['amount'],
+                                    'transaction_ref' => (string) $data['reference_id'],
+                                ];
+
+                                $results = $fcm->sendToTokens($tokens, $notification, $payloadData, app('log'));
+
+                                // cleanup invalid tokens basic heuristic
+                                foreach ($results as $token => $res) {
+                                    if (isset($res['status']) && in_array($res['status'], [400, 404, 410])) {
+                                        // try to detect not found / unregistered
+                                        $reason = $res['body']['error']['message'] ?? $res['body']['error']['status'] ?? null;
+                                        DeviceToken::where('token', $token)->delete();
+                                        Log::info('Deleted invalid device token', ['token' => $token, 'reason' => $reason]);
+                                    } elseif (isset($res['error']) && !isset($res['status'])) {
+                                        // network/other error - keep token and log
+                                        Log::warning('FCM send error (no status)', ['token' => $token, 'error' => $res['error']]);
+                                    }
+                                }
+                            } else {
+                                Log::info('No device tokens found for user', ['user_id' => $user->id]);
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        Log::error('Failed to refund notification', ['error' => $e->getMessage()]);
+                    }
                 } elseif ($order->total_refunded_price < $order->total_purchased_price) {
                     $order->status = 'CONFIRMED';
+
+                    try {
+                        $user = User::where('id', $order->user_id)->get();
+                        if ($user) {
+                            $tokens = DeviceToken::where('user_id', $user->id)
+                                ->pluck('token')
+                                ->filter(fn($t) => !empty($t))
+                                ->unique()
+                                ->toArray();
+                            if (!empty($tokens)) {
+                                $fcm = app(FcmV1Service::class);
+
+                                $title = "Refund Succeeded";
+                                $body  = "Order partially refunded, Rp " . number_format($data['amount'], 0, ',', '.') . " refunded.";
+
+                                $notification = ['title' => $title, 'body' => $body];
+                                $payloadData = [
+                                    'type' => 'refund_succeeded',
+                                    'user_id' => (string) $user->id,
+                                    'amount' => (string) $data['amount'],
+                                    'transaction_ref' => (string) $data['reference_id'],
+                                ];
+
+                                $results = $fcm->sendToTokens($tokens, $notification, $payloadData, app('log'));
+
+                                // cleanup invalid tokens basic heuristic
+                                foreach ($results as $token => $res) {
+                                    if (isset($res['status']) && in_array($res['status'], [400, 404, 410])) {
+                                        // try to detect not found / unregistered
+                                        $reason = $res['body']['error']['message'] ?? $res['body']['error']['status'] ?? null;
+                                        DeviceToken::where('token', $token)->delete();
+                                        Log::info('Deleted invalid device token', ['token' => $token, 'reason' => $reason]);
+                                    } elseif (isset($res['error']) && !isset($res['status'])) {
+                                        // network/other error - keep token and log
+                                        Log::warning('FCM send error (no status)', ['token' => $token, 'error' => $res['error']]);
+                                    }
+                                }
+                            } else {
+                                Log::info('No device tokens found for user', ['user_id' => $user->id]);
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        Log::error('Failed to refund notification', ['error' => $e->getMessage()]);
+                    }
                 }
                 $order->save();
                 Log::info('Order marked PAID', ['order_id' => $order->id, 'reference_id' => $referenceId]);
@@ -141,7 +363,7 @@ class XenditWebhookController extends Controller
                 } elseif (method_exists($bakery, 'user')) {
                     $owner = $bakery->user()->first();
                 } elseif (!empty($bakery->user_id)) {
-                    $owner = \App\Models\User::find($bakery->user_id);
+                    $owner = User::find($bakery->user_id);
                 }
 
                 if ($owner) {

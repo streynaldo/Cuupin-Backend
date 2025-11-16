@@ -69,7 +69,7 @@ class XenditWebhookController extends Controller
             }
 
             try {
-                $user = User::where('id', $order->user_id)->get();
+                $user = User::find($order->user_id);;
                 if ($user) {
                     $tokens = DeviceToken::where('user_id', $user->id)
                         ->pluck('token')
@@ -109,11 +109,11 @@ class XenditWebhookController extends Controller
                     }
                 }
             } catch (\Throwable $e) {
-                Log::error('Failed to send cancel notification', ['error' => $e->getMessage()]);
+                Log::error('Failed to send success payment notification', ['error' => $e->getMessage()]);
             }
 
             try {
-                $owner = User::where('id', $order->bakery->user_id)->get();
+                $owner = User::find($order->bakery->user_id);
                 if ($owner) {
                     $tokens = DeviceToken::where('user_id', $owner->id)
                         ->pluck('token')
@@ -153,7 +153,7 @@ class XenditWebhookController extends Controller
                     }
                 }
             } catch (\Throwable $e) {
-                Log::error('Failed to send cancel notification', ['error' => $e->getMessage()]);
+                Log::error('Failed to send success payment notification', ['error' => $e->getMessage()]);
             }
 
             return response()->json([
@@ -181,7 +181,7 @@ class XenditWebhookController extends Controller
             $order->save();
 
             try {
-                $user = User::where('id', $order->user_id)->get();
+                $user = User::find( $order->user_id);
                 if ($user) {
                     $tokens = DeviceToken::where('user_id', $user->id)
                         ->pluck('token')
@@ -242,7 +242,7 @@ class XenditWebhookController extends Controller
                 if ($order->total_purchased_price == $order->total_refunded_price) {
                     $order->status = 'CANCELLED';
                     try {
-                        $user = User::where('id', $order->user_id)->get();
+                        $user = User::find( $order->user_id);
                         if ($user) {
                             $tokens = DeviceToken::where('user_id', $user->id)
                                 ->pluck('token')

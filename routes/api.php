@@ -91,6 +91,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'abilities:wallet:read'])->group(function () {
         Route::get('/bakeries/{id}/wallet', [ApiBakeryWalletController::class, 'show'])->whereNumber('id');
         Route::get('/bakeries/{id}/wallet/transactions', [ApiBakeryWalletController::class, 'transactions'])->whereNumber('id');
+        Route::put('/bakeries/{id}/wallet', [ApiBakeryWalletController::class, 'update'])->whereNumber('id');
     });
 
     // write: login + ability bakeries

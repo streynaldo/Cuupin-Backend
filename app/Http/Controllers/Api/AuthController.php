@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Bakery;
+use App\Models\DeviceToken;
+use App\Models\BakeryWallet;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
-use App\Models\Bakery;
-use App\Models\BakeryWallet;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -108,6 +111,24 @@ class AuthController extends Controller
         // Buat token dengan abilities tsb
         $token = $user->createToken('api', $abilities)->plainTextToken;
 
+        // Simpan device token jika dikirim dari client (multi-device support)
+        if (! empty($data['device_token'])) {
+            try {
+                DeviceToken::updateOrCreate(
+                    ['token' => $data['device_token']],
+                    [
+                        'user_id'      => $user->id,
+                        'platform'     => $data['platform'] ?? 'ios',
+                        'device_name'  => $data['device_name'] ?? null,
+                        'last_seen_at' => Carbon::now(),
+                    ]
+                );
+            } catch (\Throwable $e) {
+                // jangan gagalkan login hanya karena penyimpanan device token gagal
+                Log::warning('Failed to save device token on login: ' . $e->getMessage());
+            }
+        }
+
         return response()->json([
             'token'     => $token,
             'user'      => $user,
@@ -178,8 +199,18 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        // user() mengembalikan instance User untuk token yang dipakai
-        $request->user()->currentAccessToken()->delete();
+        // Hapus personal access token (sanctum)
+        $token = $request->user()->currentAccessToken();
+        if ($token) {
+            $token->delete();
+        }
+
+        // Jika device_token dikirim, hapus token device itu saja
+        if ($request->filled('device_token')) {
+            DeviceToken::where('token', $request->device_token)
+                ->where('user_id', $request->user()->id)
+                ->delete();
+        }
         return response()->json(['message' => 'Successfully logged out'], 200);
     }
 

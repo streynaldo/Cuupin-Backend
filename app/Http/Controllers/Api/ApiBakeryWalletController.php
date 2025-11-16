@@ -59,7 +59,7 @@ class ApiBakeryWalletController extends Controller
     public function update(Request $request, $id)
     {
         // 1. Ambil bakery dulu
-        $bakery = Bakery::select('id', 'name', 'user_id')->find($id);
+        $bakery = Bakery::find($id);
         if (! $bakery) {
             return response()->json(['message' => 'Bakery not found'], 404);
         }
@@ -92,7 +92,7 @@ class ApiBakeryWalletController extends Controller
             'success' => true,
             'message' => 'Wallet bank info updated successfully',
             'data'    => [
-                'bakery' => $bakery->only(['id', 'name']),
+                'bakery' => $bakery->fresh(),
                 'wallet' => $wallet->fresh(),
             ],
         ], 200);

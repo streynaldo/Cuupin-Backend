@@ -134,6 +134,7 @@ class AuthController extends Controller
             'user'      => $user,
             'role'      => $user->role,
             'abilities' => $abilities,
+            'device_token'     => $data['device_token']
         ], 200);
     }
 

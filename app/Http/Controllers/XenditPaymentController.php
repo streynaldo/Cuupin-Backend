@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Jobs\ExpireOrder;
 use App\Models\BakeryWallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -39,6 +40,8 @@ class XenditPaymentController extends Controller
                 ->setTimezone('Asia/Jakarta')
                 ->toDateTimeString();
             $data->save();
+
+            ExpireOrder::dispatch($data->id)->delay($data->expired_at);
 
             return response()->json($res);
         } else {

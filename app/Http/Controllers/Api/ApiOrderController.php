@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Order;
 use App\Models\Bakery;
 use App\Models\Product;
+use App\Jobs\ExpireOrder;
 use App\Models\OrderItems;
 use App\Models\DeviceToken;
 use Illuminate\Support\Str;
@@ -115,6 +116,9 @@ class ApiOrderController extends Controller
             $data->total_purchased_price += $item->subtotal_price;
         }
         $data->save();
+
+        ExpireOrder::dispatch($order->id)
+            ->delay($order->expired_at);
         // dd($data);
 
 

@@ -53,7 +53,7 @@ class XenditWebhookController extends Controller
                 return response()->json(['status' => 'no reference_id'], 402);
             }
 
-            $order = Order::with('bakery')->where('reference_id', $referenceId)->first();
+            $order = Order::with(['bakery', 'user'])->where('reference_id', $referenceId)->first();
             if (!$order) {
                 Log::warning('Order not found', ['reference_id' => $referenceId]);
                 return response()->json(['status' => 'order not found'], 402);
@@ -84,7 +84,7 @@ class XenditWebhookController extends Controller
 
                         $notification = ['title' => $title, 'body' => $body];
                         $payloadData = [
-                            'type' => 'cancelled_order',
+                            'type' => 'new_order',
                             'user_id' => (string) $user->id,
                             'amount' => (string) $data['amount'],
                             'transaction_ref' => (string) $data['reference_id'],
@@ -123,8 +123,8 @@ class XenditWebhookController extends Controller
                     if (!empty($tokens)) {
                         $fcm = app(FcmV1Service::class);
 
-                        $title = "You have a new Order";
-                        $body  = "You just got new order, tralallaa";
+                        $title = "Order received";
+                        $body  = "New order received! Order #" . $order->reference_id . " from " . $order->user->name . " has been paid";
 
                         $notification = ['title' => $title, 'body' => $body];
                         $payloadData = [
@@ -191,8 +191,8 @@ class XenditWebhookController extends Controller
                     if (!empty($tokens)) {
                         $fcm = app(FcmV1Service::class);
 
-                        $title = "Order Cancelled";
-                        $body  = "Your payment failed.";
+                        $title = "Order Failed";
+                        $body  = "Your order #" . $order->reference_id . " could not be processed. Please try again or contact support.";
 
                         $notification = ['title' => $title, 'body' => $body];
                         $payloadData = [
@@ -252,8 +252,8 @@ class XenditWebhookController extends Controller
                             if (!empty($tokens)) {
                                 $fcm = app(FcmV1Service::class);
 
-                                $title = "Refund Succeeded";
-                                $body  = "Order totally refunded, Rp " . number_format($data['amount'], 0, ',', '.') . " refunded.";
+                                $title = "Order Refunded";
+                                $body  = "Refund processed!, Order #" . $order->reference_id .  " has been fully refunded for Rp " . number_format($data['amount'], 0, ',', '.') . ".";
 
                                 $notification = ['title' => $title, 'body' => $body];
                                 $payloadData = [
@@ -298,8 +298,8 @@ class XenditWebhookController extends Controller
                             if (!empty($tokens)) {
                                 $fcm = app(FcmV1Service::class);
 
-                                $title = "Refund Succeeded";
-                                $body  = "Order partially refunded, Rp " . number_format($data['amount'], 0, ',', '.') . " refunded.";
+                                $title = "Order Refunded";
+                                $body  = "Refund processed!, Order #" . $order->reference_id .  " has been partialy refunded for Rp " . number_format($data['amount'], 0, ',', '.') . ".";
 
                                 $notification = ['title' => $title, 'body' => $body];
                                 $payloadData = [
@@ -377,8 +377,8 @@ class XenditWebhookController extends Controller
                     if (!empty($tokens)) {
                         $fcm = app(FcmV1Service::class);
 
-                        $title = "Payout Succeeded";
-                        $body  = "Payout succeeded, Rp " . number_format($data['amount'], 0, ',', '.') . " sent.";
+                        $title = "Successful Withdrawal";
+                        $body  = "Withdrawal successful! You’ve withdrawn Rp " . number_format($data['amount'], 0, ',', '.') . " to your bank account.";
 
                         $notification = ['title' => $title, 'body' => $body];
                         $payloadData = [

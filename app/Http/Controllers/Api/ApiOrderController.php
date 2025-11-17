@@ -109,7 +109,7 @@ class ApiOrderController extends Controller
                 'order_id' => $order->id,
                 'product_id' => $item['product_id'],
                 'quantity' => $item['quantity'],
-                'subtotal_price' => ($product->price * $item['quantity']),
+                'subtotal_price' => ($product->discount_price * $item['quantity']),
                 'status' => $item['status'],
             ]);
             $data->total_purchased_price += $item->subtotal_price;
@@ -160,7 +160,7 @@ class ApiOrderController extends Controller
     public function update(Request $request, string $id)
     {
         $user = $request->user();
-        $order = Order::with('items')->where('reference_id', $id)->first();
+        $order = Order::with(['items', 'user'])->where('reference_id', $id)->first();
 
         if ($order->user_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 401);
@@ -186,8 +186,8 @@ class ApiOrderController extends Controller
                     if (!empty($tokens)) {
                         $fcm = app(FcmV1Service::class);
 
-                        $title = "Order #" . $order->reference_id . "Picked Up";
-                        $body  = "Order successfully picked up";
+                        $title = "Order Completed";
+                        $body  = "Order #" . $order->reference_id . " is complete. " . $order->user->name . " has picked up the order.";
 
                         $notification = ['title' => $title, 'body' => $body];
                         $payloadData = [
@@ -298,8 +298,8 @@ class ApiOrderController extends Controller
                     if (!empty($tokens)) {
                         $fcm = app(FcmV1Service::class);
 
-                        $title = "Your order cancelled";
-                        $body  = "All of your order items are not available";
+                        $title = "Order Refunded";
+                        $body  = "Your order is not available. Order #" . $order->reference_id . " has been refunded for Rp " . $order->total_refunded_price . ".";
 
                         $notification = ['title' => $title, 'body' => $body];
                         $payloadData = [
@@ -343,8 +343,8 @@ class ApiOrderController extends Controller
                     if (!empty($tokens)) {
                         $fcm = app(FcmV1Service::class);
 
-                        $title = "Your order confirmed";
-                        $body  = "Let's pick up your order quickly! :D";
+                        $title = "Order Confirmed";
+                        $body  = "Your order #" . $order->reference_id . "has been confirmed. We’re preparing it for you!";
 
                         $notification = ['title' => $title, 'body' => $body];
                         $payloadData = [
@@ -396,8 +396,8 @@ class ApiOrderController extends Controller
                     if (!empty($tokens)) {
                         $fcm = app(FcmV1Service::class);
 
-                        $title = "You're in queue";
-                        $body  = "Quick!! you must finish your payment";
+                        $title = "⁠It’s Your Turn to Pay";
+                        $body  = "It’s your turn to pay for order #". $order->reference_id .". Please proceed to payment.";
 
                         $notification = ['title' => $title, 'body' => $body];
                         $payloadData = [
@@ -457,8 +457,8 @@ class ApiOrderController extends Controller
                     if (!empty($tokens)) {
                         $fcm = app(FcmV1Service::class);
 
-                        $title = "Your order has been cancelled";
-                        $body  = "Sorry, your payment time expired";
+                        $title = "Order Cancelled";
+                        $body  = "Sorry, your payment time expired !";
 
                         $notification = ['title' => $title, 'body' => $body];
                         $payloadData = [

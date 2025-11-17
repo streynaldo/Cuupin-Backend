@@ -80,8 +80,14 @@ class ApiBakeryController extends Controller
     public function show(int $id)
     {
         try {
-            $bakery = Bakery::with('user:id,name,email')->findOrFail($id);
-            return response()->json($bakery);
+            $bakery = Bakery::find($id);
+            if (! $bakery) return response()->json(['message' => 'Bakery not found'], 404);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bakery details retrieved successfully',
+                "data" => $bakery
+            ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Bakery not found'], 404);
         }

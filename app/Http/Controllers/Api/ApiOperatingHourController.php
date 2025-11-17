@@ -9,6 +9,7 @@ use App\Models\OperatingHour;
 use App\Models\Bakery;
 use App\Models\User;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class ApiOperatingHourController extends Controller
 {
@@ -30,6 +31,66 @@ class ApiOperatingHourController extends Controller
             'message' => 'Operating hours retrieved successfully',
             'bakery' => $bakery->only(['id', 'name']),
             'hours'  => $hours,
+        ], 200);
+    }
+
+    public function bulkUpsert(Request $request, $id)
+    {
+        // 1) Cek bakery-nya ada
+        $bakery = Bakery::find($id);
+        if (! $bakery) {
+            return response()->json(['message' => 'Bakery not found'], 404);
+        }
+
+        // 2) Hanya owner / admin
+        $this->authorizeOwnerOrAdminByBakery($request->user(), $bakery->id);
+
+        // 3) Validasi input
+        $data = $request->validate([
+            'open_time'  => ['required', 'date_format:H:i'],
+            'close_time' => ['required', 'date_format:H:i', 'after:open_time'],
+            'days_open'  => ['required', 'array'],        // bisa kosong [], tapi array harus ada
+            'days_open.*' => ['integer', 'between:1,7'],   // 1–7 (mapping sama seperti sekarang)
+        ]);
+
+        $openTime  = $data['open_time'];
+        $closeTime = $data['close_time'];
+
+        // Normalisasi hari buka
+        $daysOpen  = collect($data['days_open'])->unique()->values();
+        $allDays   = collect(range(1, 7));
+        $daysClosed = $allDays->diff($daysOpen);
+
+        // 4) Simpan dalam 1 transaksi
+        DB::transaction(function () use ($bakery, $daysOpen, $daysClosed, $openTime, $closeTime) {
+            // Loop 1–7, updateOrCreate tiap hari
+            foreach (range(1, 7) as $day) {
+                $isClosed = $daysClosed->contains($day);
+
+                OperatingHour::updateOrCreate(
+                    [
+                        'bakery_id'       => $bakery->id,
+                        'day_of_the_week' => $day,
+                    ],
+                    [
+                        'is_closed'  => $isClosed,
+                        'open_time'  => $isClosed ? null : $openTime,
+                        'close_time' => $isClosed ? null : $closeTime,
+                    ]
+                );
+            }
+        });
+
+        // 5) Ambil lagi semua hours yang sudah fix
+        $hours = OperatingHour::where('bakery_id', $bakery->id)
+            ->orderBy('day_of_the_week')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Operating hours updated in bulk',
+            'bakery'  => $bakery->only(['id', 'name']),
+            'hours'   => $hours,
         ], 200);
     }
 

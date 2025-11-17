@@ -115,6 +115,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/bakeries/{id}/hours', [ApiOperatingHourController::class, 'store'])->whereNumber('id');
         Route::put('/operating-hours/{id}', [ApiOperatingHourController::class, 'update'])->whereNumber('id');
         Route::delete('/operating-hours/{id}', [ApiOperatingHourController::class, 'destroy'])->whereNumber('id');
+        Route::post('/bakeries/{id}/hours/bulk', [ApiOperatingHourController::class, 'bulkUpsert'])->whereNumber('id');
     });
 
     // write: login + ability products

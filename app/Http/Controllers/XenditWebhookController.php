@@ -79,8 +79,8 @@ class XenditWebhookController extends Controller
                     if (!empty($tokens)) {
                         $fcm = app(FcmV1Service::class);
 
-                        $title = "Order Cancelled";
-                        $body  = "Your payment failed.";
+                        $title = "Order Placed";
+                        $body  = "Please wait for bakery to confirm!";
 
                         $notification = ['title' => $title, 'body' => $body];
                         $payloadData = [
@@ -123,7 +123,7 @@ class XenditWebhookController extends Controller
                     if (!empty($tokens)) {
                         $fcm = app(FcmV1Service::class);
 
-                        $title = "New Order Placed";
+                        $title = "You have a new Order";
                         $body  = "You just got new order, tralallaa";
 
                         $notification = ['title' => $title, 'body' => $body];

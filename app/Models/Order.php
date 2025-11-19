@@ -17,7 +17,8 @@ class Order extends Model
         'reference_id',
         'status',
         'expired_at',
-        'payment_session_url'
+        'payment_session_url',
+        'payment_request_id'
     ];
 
     protected $casts = ['expired_at' => 'datetime'];

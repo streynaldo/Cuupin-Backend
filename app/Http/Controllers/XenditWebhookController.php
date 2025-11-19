@@ -9,12 +9,13 @@ use App\Models\Payment;
 use App\Models\DeviceToken;
 use App\Models\BakeryWallet;
 use Illuminate\Http\Request;
+use App\Jobs\ExpirePaidOrder;
 use App\Models\WalletTransaction;
+use function Laravel\Prompts\error;
 use Illuminate\Support\Facades\Log;
+
 use Illuminate\Support\Facades\Cache;
 use App\Services\Firebase\FcmV1Service;
-
-use function Laravel\Prompts\error;
 
 class XenditWebhookController extends Controller
 {
@@ -61,8 +62,13 @@ class XenditWebhookController extends Controller
 
             if (in_array($status, ['COMPLETED', 'SUCCEEDED', 'PAID', 'CAPTURED'])) {
                 $order->status = 'PAID';
-                $order->expired_at = null;
+                $order->expired_at = now()->addMinutes(5);
+                $order->payment_request_id = $data['payment_request_id'];
                 $order->save();
+
+                ExpirePaidOrder::dispatch($order->id)
+                    ->delay($order->expired_at);
+
                 Log::info('Order marked PAID', ['order_id' => $order->id, 'reference_id' => $referenceId]);
             } else {
                 Log::info('Payment completed event with non-success status', ['status' => $status]);

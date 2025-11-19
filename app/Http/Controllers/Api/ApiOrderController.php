@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Xendit\PaymentAction;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\Bakery;
@@ -91,7 +92,7 @@ class ApiOrderController extends Controller
             'total_purchased_price' => 0,
             'total_refunded_price' => 0,
             'reference_id' => $referenceId,
-            'expired_at' => now()->addMinutes(10),
+            'expired_at' => now()->addMinutes(2),
             'status' => $waiting ? 'WAITING' : 'ONPROGRESS'
         ]);
 
@@ -229,7 +230,7 @@ class ApiOrderController extends Controller
         }
     }
 
-    public function confirmation(Request $request, string $id)
+    public function confirmation(Request $request, string $id, PaymentAction $pa)
     {
         $user = $request->user();
         $order = Order::with(['items'])->findOrFail($id);
@@ -381,6 +382,16 @@ class ApiOrderController extends Controller
             }
             }
             $order->save();
+
+            if($order->total_refunded_price > 0){
+                $pa->createRefund([
+                    'payment_request_id' => $order->payment_request_id,
+                    'amount'             => $order->total_refunded_price,
+                    'currency'           => 'IDR',
+                    'reason'             => "Bakery Failed To Confirm",
+                    'reference_id'       => $order->reference_id,
+                ]);
+            }
 
             $waitingOrder = Order::where('status', 'WAITING')
                 ->oldest()   // default: created_at ASC

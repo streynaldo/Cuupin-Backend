@@ -386,8 +386,10 @@ class ApiOrderController extends Controller
                 ->oldest()   // default: created_at ASC
                 ->first();
             
-            $waitingOrder->status = 'ONPROGRESS';
-            $waitingOrder->save();
+                if($waitingOrder){
+                    $waitingOrder->status = 'ONPROGRESS';
+                    $waitingOrder->save();
+                }
 
             try {
                 $user = User::find($waitingOrder->user_id);

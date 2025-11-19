@@ -268,7 +268,7 @@ class ApiOrderController extends Controller
                                 $totalRefundedPrice += ($item->quantity - $updatedItems['quantity']) * ($item->subtotal_price/$item->quantity);
                                 $item->quantity = $updatedItems['quantity'];
                                 $item->status = 'PURCHASED';
-                                $item->subtotal_price = $item->quantity * ($item->subtotal_price/$item->quantity);
+                                $item->subtotal_price = $item->quantity != 0 ? $item->quantity * ($item->subtotal_price/$item->quantity) : 0;
                                 $item->save();
 
                                 if ($item->quantity > 0) {

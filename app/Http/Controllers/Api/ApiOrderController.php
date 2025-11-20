@@ -116,8 +116,8 @@ class ApiOrderController extends Controller
                 'status' => $item['status'],
             ]);
             $data->total_purchased_price += $item->subtotal_price;
+            $data->save();
         }
-        $data->save();
 
         ExpireOrder::dispatch($order->id)
             ->delay($order->expired_at);

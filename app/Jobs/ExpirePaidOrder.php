@@ -33,8 +33,9 @@ class ExpirePaidOrder implements ShouldQueue
     public function handle(PaymentAction $pa): void
     {
         Log::info("MASUK HANDLE EXPIRE PAID ORDER");
-        $order = Order::with('bakery')->find($this->referenceId,'reference_id');
+        $order = Order::with('bakery')->where('reference_id', $this->referenceId)->first();
         if (!$order || $order->status !== 'PAID') {
+            Log::info("Order not found or not PAID", ['reference_id' => $this->referenceId, 'order' => $order ? $order->id : null]);
             return; // sudah dibayar / expired
         }
         Log::info("SAMPAI DISINI DENGAN ORDER = " . $order->reference_id);

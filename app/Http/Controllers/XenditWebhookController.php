@@ -50,13 +50,13 @@ class XenditWebhookController extends Controller
             $status      = strtoupper((string) ($data['status'] ?? ''));
 
             if (!$referenceId) {
-                Log::warning('No reference_id in payload', ['data' => $data]);
+                Log::warning('[PAYMENT SESSION COMPLETED] No reference_id in payload', ['data' => $data]);
                 return response()->json(['status' => 'no reference_id'], 402);
             }
 
             $order = Order::with(['bakery', 'user'])->where('reference_id', $referenceId)->first();
             if (!$order) {
-                Log::warning('Order not found', ['reference_id' => $referenceId]);
+                Log::warning('[PAYMENT SESSION COMPLETED] Order not found', ['reference_id' => $referenceId]);
                 return response()->json(['status' => 'order not found'], 402);
             }
 
@@ -69,9 +69,9 @@ class XenditWebhookController extends Controller
                 ExpirePaidOrder::dispatch($order->reference_id)
                     ->delay($order->expired_at);
 
-                Log::info('Order marked PAID', ['order_id' => $order->id, 'reference_id' => $referenceId]);
+                Log::info('[PAYMENT SESSION COMPLETED] Order marked PAID', ['order_id' => $order->id, 'reference_id' => $referenceId]);
             } else {
-                Log::info('Payment completed event with non-success status', ['status' => $status]);
+                Log::info('[PAYMENT SESSION COMPLETED] Payment completed event with non-success status', ['status' => $status]);
             }
 
             try {
@@ -173,13 +173,13 @@ class XenditWebhookController extends Controller
             $status      = strtoupper((string) ($data['status'] ?? ''));
 
             if (!$referenceId) {
-                Log::warning('No reference_id in payload', ['data' => $data]);
+                Log::warning('[PAYMENT SESSION EXPIRED] No reference_id in payload', ['data' => $data]);
                 return response()->json(['status' => 'no reference_id'], 402);
             }
 
             $order = Order::where('reference_id', $referenceId)->first();
             if (!$order) {
-                Log::warning('Order not found', ['reference_id' => $referenceId]);
+                Log::warning('[PAYMENT SESSION EXPIRED] Order not found', ['reference_id' => $referenceId]);
                 return response()->json(['status' => 'order not found'], 402);
             }
 
@@ -240,7 +240,7 @@ class XenditWebhookController extends Controller
 
             $order = Order::where('reference_id', $referenceId)->first();
             if (!$order) {
-                Log::warning('Order not found', ['reference_id' => $referenceId]);
+                Log::warning('[REFUND SUCCEEDED] Order not found', ['reference_id' => $referenceId]);
                 return response()->json(['status' => 'order not found'], 402);
             }
 

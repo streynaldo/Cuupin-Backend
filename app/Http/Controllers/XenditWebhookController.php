@@ -69,7 +69,11 @@ class XenditWebhookController extends Controller
                 ExpirePaidOrder::dispatch($order->reference_id)
                     ->delay($order->expired_at);
 
-                Log::info('[PAYMENT SESSION COMPLETED] Order marked PAID', ['order_id' => $order->id, 'reference_id' => $referenceId]);
+                Log::info('[PAYMENT SESSION COMPLETED] Order marked PAID and ExpirePaidOrder job dispatched', [
+                    'order_id' => $order->id,
+                    'reference_id' => $referenceId,
+                    'expired_at' => $order->expired_at->toDateTimeString()
+                ]);
             } else {
                 Log::info('[PAYMENT SESSION COMPLETED] Payment completed event with non-success status', ['status' => $status]);
             }

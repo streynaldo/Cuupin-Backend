@@ -30,7 +30,7 @@ class ExpirePaidOrder implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(PaymentAction $pa): void
+    public function handle(): void
     {
         Log::info("MASUK HANDLE EXPIRE PAID ORDER");
         $order = Order::with('bakery')->where('reference_id', $this->referenceId)->first();
@@ -44,6 +44,7 @@ class ExpirePaidOrder implements ShouldQueue
         $order->total_purchased_price = 0;
         $order->save();
 
+        $pa = app(PaymentAction::class);
         $res = $pa->createRefund([
             'payment_request_id' => $order->payment_request_id,
             'amount'             => $order->total_refunded_price,

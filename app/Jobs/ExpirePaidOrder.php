@@ -44,48 +44,54 @@ class ExpirePaidOrder implements ShouldQueue
         $order->total_purchased_price = 0;
         $order->save();
 
-        $res = $pa->createRefund([
-            'payment_request_id' => $order->payment_request_id,
-            'amount'             => (Int) $order->total_refunded_price,
-            'currency'           => 'IDR',
-            'reason'             => "Bakery Failed To Confirm",
-            'reference_id'       => $order->reference_id,
-        ]);
-        Log::info("SAMPAI DISINI DENGAN ORDER BERHASIL DI REFUND = " . $order->reference_id);
-        if ($res) {
-            $order->status = 'CANCELLED';
-            $order->save();
+        if ($order->total_purchased_price != 0) {
+            $res = $pa->createRefund([
+                'payment_request_id' => $order->payment_request_id,
+                'amount'             => (int) $order->total_refunded_price,
+                'currency'           => 'IDR',
+                'reason'             => "Bakery Failed To Confirm",
+                'reference_id'       => $order->reference_id,
+            ]);
 
-            // Push notif ke user bakery
-            $tokens = DeviceToken::where('user_id', $order->bakery->user_id)
-                ->pluck('token')
-                ->toArray();
+            Log::info("SAMPAI DISINI DENGAN ORDER BERHASIL DI REFUND = " . $order->reference_id);
+            if ($res) {
+                $order->status = 'CANCELLED';
+                $order->save();
 
-            if (!empty($tokens)) {
-                $fcm = app(FcmV1Service::class);
-                $fcm->sendToTokens(
-                    $tokens,
-                    ['title' => 'Order Cancelled', 'body' => "You failed to confirm order #{$order->id}."],
-                    ['type' => 'order_cancelled', 'order_id' => (string)$order->id],
-                    app('log')
-                );
+                // Push notif ke user bakery
+                $tokens = DeviceToken::where('user_id', $order->bakery->user_id)
+                    ->pluck('token')
+                    ->toArray();
+
+                if (!empty($tokens)) {
+                    $fcm = app(FcmV1Service::class);
+                    $fcm->sendToTokens(
+                        $tokens,
+                        ['title' => 'Order Cancelled', 'body' => "You failed to confirm order #{$order->id}."],
+                        ['type' => 'order_cancelled', 'order_id' => (string)$order->id],
+                        app('log')
+                    );
+                }
+                // Push notif ke user pemesan
+                $tokens = DeviceToken::where('user_id', $order->user_id)
+                    ->pluck('token')
+                    ->toArray();
+
+                if (!empty($tokens)) {
+                    $fcm = app(FcmV1Service::class);
+                    $fcm->sendToTokens(
+                        $tokens,
+                        ['title' => 'Order Refunded', 'body' => "Refund processed!, Order #" . $order->reference_id .  " has been fully refunded for Rp " . number_format($order->total_refunded_price, 0, ',', '.') . "."],
+                        ['type' => 'order_cancelled', 'order_id' => (string)$order->id],
+                        app('log')
+                    );
+                }
+
+                Log::info('Order expired via delayed job', ['order_id' => $order->id]);
             }
-            // Push notif ke user pemesan
-            $tokens = DeviceToken::where('user_id', $order->user_id)
-                ->pluck('token')
-                ->toArray();
-
-            if (!empty($tokens)) {
-                $fcm = app(FcmV1Service::class);
-                $fcm->sendToTokens(
-                    $tokens,
-                    ['title' => 'Order Refunded', 'body' => "Refund processed!, Order #" . $order->reference_id .  " has been fully refunded for Rp " . number_format($order->total_refunded_price, 0, ',', '.') . "."],
-                    ['type' => 'order_cancelled', 'order_id' => (string)$order->id],
-                    app('log')
-                );
-            }
-
-            Log::info('Order expired via delayed job', ['order_id' => $order->id]);
+        } else {
+            Log::info("Order total null");
+            return;
         }
     }
 }

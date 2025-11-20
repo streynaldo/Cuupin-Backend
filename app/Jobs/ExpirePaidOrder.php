@@ -47,7 +47,7 @@ class ExpirePaidOrder implements ShouldQueue
         $pa = app(PaymentAction::class);
         $res = $pa->createRefund([
             'payment_request_id' => $order->payment_request_id,
-            'amount'             => $order->total_refunded_price,
+            'amount'             => (Int) $order->total_refunded_price,
             'currency'           => 'IDR',
             'reason'             => "Bakery Failed To Confirm",
             'reference_id'       => $order->reference_id,

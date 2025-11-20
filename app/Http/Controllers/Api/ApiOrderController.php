@@ -388,9 +388,9 @@ class ApiOrderController extends Controller
             if ($order->total_refunded_price > 0) {
                 $pa->createRefund([
                     'payment_request_id' => $order->payment_request_id,
-                    'amount'             => $order->total_refunded_price,
+                    'amount'             => (Int) $order->total_refunded_price,
                     'currency'           => 'IDR',
-                    'reason'             => "Bakery Failed To Confirm",
+                    'reason'             => "Partial/Full Refund",
                     'reference_id'       => $order->reference_id,
                 ]);
             }

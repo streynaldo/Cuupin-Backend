@@ -96,6 +96,9 @@ class ApiDiscountEventController extends Controller
             'discount_end_time'   => ['sometimes', 'date'],
         ]);
 
+        // simpan nilai lama sebelum update
+        $oldDiscount = (int) $row->discount;
+
         // Validasi kombinasi waktu (pakai nilai baru kalau ada)
         $start = array_key_exists('discount_start_time', $data)
             ? Carbon::parse($data['discount_start_time'])
@@ -130,6 +133,17 @@ class ApiDiscountEventController extends Controller
             'discount_start_time' => $start,
             'discount_end_time'   => $end,
         ]);
+
+        // kalau discount% berubah → update semua produk yang pakai event ini
+        if (array_key_exists('discount', $data)) {
+            $newDiscount = (int) $row->discount;
+
+            if ($newDiscount !== $oldDiscount) {
+                foreach ($row->products as $product) {
+                    $product->applyDiscount($row);
+                }
+            }
+        }
 
         return response()->json([
             'success' => true,

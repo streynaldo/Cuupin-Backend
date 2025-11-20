@@ -42,7 +42,8 @@ class ApiOrderController extends Controller
         return response()->json($query);
     }
 
-    public function getAllOrderByBakeryId(Request $request, string $bakeryId){
+    public function getAllOrderByBakeryId(Request $request, string $bakeryId)
+    {
         $user = $request->user(); // Sanctum
 
         if (!$user) {
@@ -145,14 +146,15 @@ class ApiOrderController extends Controller
         }
     }
 
-    public function showByBakeryId(Request $request, string $bakeryId, string $id){
+    public function showByBakeryId(Request $request, string $bakeryId, string $id)
+    {
         $user = $request->user();
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
         $order = Order::with(['items.product', 'user' => fn($q) => $q->select('id', 'name')])->findOrFail($id);
-        if($order->bakery_id != $bakeryId){
+        if ($order->bakery_id != $bakeryId) {
             return response()->json(['message' => 'This bakery cant access the order'], 401);
         }
 
@@ -263,13 +265,13 @@ class ApiOrderController extends Controller
                                     'order_id' => $item->order_id,
                                     'product_id' => $item->product_id,
                                     'quantity' => $item->quantity - $updatedItems['quantity'],
-                                    'subtotal_price' => ($item->quantity - $updatedItems['quantity']) * ($item->subtotal_price/$item->quantity) ,
+                                    'subtotal_price' => ($item->quantity - $updatedItems['quantity']) * ($item->subtotal_price / $item->quantity),
                                     'status' => 'REFUND',
                                 ]);
-                                $totalRefundedPrice += ($item->quantity - $updatedItems['quantity']) * ($item->subtotal_price/$item->quantity);
+                                $totalRefundedPrice += ($item->quantity - $updatedItems['quantity']) * ($item->subtotal_price / $item->quantity);
                                 $item->quantity = $updatedItems['quantity'];
                                 $item->status = 'PURCHASED';
-                                $item->subtotal_price = $item->quantity != 0 ? $item->quantity * ($item->subtotal_price/$item->quantity) : 0;
+                                $item->subtotal_price = $item->quantity != 0 ? $item->quantity * ($item->subtotal_price / $item->quantity) : 0;
                                 $item->save();
 
                                 if ($item->quantity > 0) {
@@ -293,97 +295,97 @@ class ApiOrderController extends Controller
             if ($canceled) {
                 $order->status = 'CANCELLED';
                 try {
-                $user = User::find($order->user_id);
-                if ($user) {
-                    $tokens = DeviceToken::where('user_id', $user->id)
-                        ->pluck('token')
-                        ->filter(fn($t) => !empty($t))
-                        ->unique()
-                        ->toArray();
-                    if (!empty($tokens)) {
-                        $fcm = app(FcmV1Service::class);
+                    $user = User::find($order->user_id);
+                    if ($user) {
+                        $tokens = DeviceToken::where('user_id', $user->id)
+                            ->pluck('token')
+                            ->filter(fn($t) => !empty($t))
+                            ->unique()
+                            ->toArray();
+                        if (!empty($tokens)) {
+                            $fcm = app(FcmV1Service::class);
 
-                        $title = "Order Refunded";
-                        $body  = "Your order is not available. Order #" . $order->reference_id . " has been refunded for Rp " . $order->total_refunded_price . ".";
+                            $title = "Order Refunded";
+                            $body  = "Your order is not available. Order #" . $order->reference_id . " has been refunded for Rp " . $order->total_refunded_price . ".";
 
-                        $notification = ['title' => $title, 'body' => $body];
-                        $payloadData = [
-                            'type' => 'cancelled_order',
-                            'user_id' => (string) $user->id,
-                            'amount' => (string) $order->total_purchased_price,
-                            'transaction_ref' => (string) $order->reference_id,
-                        ];
+                            $notification = ['title' => $title, 'body' => $body];
+                            $payloadData = [
+                                'type' => 'cancelled_order',
+                                'user_id' => (string) $user->id,
+                                'amount' => (string) $order->total_purchased_price,
+                                'transaction_ref' => (string) $order->reference_id,
+                            ];
 
-                        $results = $fcm->sendToTokens($tokens, $notification, $payloadData, app('log'));
+                            $results = $fcm->sendToTokens($tokens, $notification, $payloadData, app('log'));
 
-                        // cleanup invalid tokens basic heuristic
-                        foreach ($results as $token => $res) {
-                            if (isset($res['status']) && in_array($res['status'], [400, 404, 410])) {
-                                // try to detect not found / unregistered
-                                $reason = $res['body']['error']['message'] ?? $res['body']['error']['status'] ?? null;
-                                DeviceToken::where('token', $token)->delete();
-                                Log::info('Deleted invalid device token', ['token' => $token, 'reason' => $reason]);
-                            } elseif (isset($res['error']) && !isset($res['status'])) {
-                                // network/other error - keep token and log
-                                Log::warning('FCM send error (no status)', ['token' => $token, 'error' => $res['error']]);
+                            // cleanup invalid tokens basic heuristic
+                            foreach ($results as $token => $res) {
+                                if (isset($res['status']) && in_array($res['status'], [400, 404, 410])) {
+                                    // try to detect not found / unregistered
+                                    $reason = $res['body']['error']['message'] ?? $res['body']['error']['status'] ?? null;
+                                    DeviceToken::where('token', $token)->delete();
+                                    Log::info('Deleted invalid device token', ['token' => $token, 'reason' => $reason]);
+                                } elseif (isset($res['error']) && !isset($res['status'])) {
+                                    // network/other error - keep token and log
+                                    Log::warning('FCM send error (no status)', ['token' => $token, 'error' => $res['error']]);
+                                }
                             }
+                        } else {
+                            Log::info('No device tokens found for user', ['user_id' => $user->id]);
                         }
-                    } else {
-                        Log::info('No device tokens found for user', ['user_id' => $user->id]);
                     }
+                } catch (\Throwable $e) {
+                    Log::error('Failed to send cancelled order notification', ['error' => $e->getMessage()]);
                 }
-            } catch (\Throwable $e) {
-                Log::error('Failed to send cancelled order notification', ['error' => $e->getMessage()]);
-            }
             } else {
                 $order->status = 'CONFIRMED';
                 try {
-                $user = User::find($order->user_id);
-                if ($user) {
-                    $tokens = DeviceToken::where('user_id', $user->id)
-                        ->pluck('token')
-                        ->filter(fn($t) => !empty($t))
-                        ->unique()
-                        ->toArray();
-                    if (!empty($tokens)) {
-                        $fcm = app(FcmV1Service::class);
+                    $user = User::find($order->user_id);
+                    if ($user) {
+                        $tokens = DeviceToken::where('user_id', $user->id)
+                            ->pluck('token')
+                            ->filter(fn($t) => !empty($t))
+                            ->unique()
+                            ->toArray();
+                        if (!empty($tokens)) {
+                            $fcm = app(FcmV1Service::class);
 
-                        $title = "Order Confirmed";
-                        $body  = "Your order #" . $order->reference_id . "has been confirmed. We’re preparing it for you!";
+                            $title = "Order Confirmed";
+                            $body  = "Your order #" . $order->reference_id . "has been confirmed. We’re preparing it for you!";
 
-                        $notification = ['title' => $title, 'body' => $body];
-                        $payloadData = [
-                            'type' => 'confirmed_order',
-                            'user_id' => (string) $user->id,
-                            'amount' => (string) $order->total_purchased_price,
-                            'transaction_ref' => (string) $order->reference_id,
-                        ];
+                            $notification = ['title' => $title, 'body' => $body];
+                            $payloadData = [
+                                'type' => 'confirmed_order',
+                                'user_id' => (string) $user->id,
+                                'amount' => (string) $order->total_purchased_price,
+                                'transaction_ref' => (string) $order->reference_id,
+                            ];
 
-                        $results = $fcm->sendToTokens($tokens, $notification, $payloadData, app('log'));
+                            $results = $fcm->sendToTokens($tokens, $notification, $payloadData, app('log'));
 
-                        // cleanup invalid tokens basic heuristic
-                        foreach ($results as $token => $res) {
-                            if (isset($res['status']) && in_array($res['status'], [400, 404, 410])) {
-                                // try to detect not found / unregistered
-                                $reason = $res['body']['error']['message'] ?? $res['body']['error']['status'] ?? null;
-                                DeviceToken::where('token', $token)->delete();
-                                Log::info('Deleted invalid device token', ['token' => $token, 'reason' => $reason]);
-                            } elseif (isset($res['error']) && !isset($res['status'])) {
-                                // network/other error - keep token and log
-                                Log::warning('FCM send error (no status)', ['token' => $token, 'error' => $res['error']]);
+                            // cleanup invalid tokens basic heuristic
+                            foreach ($results as $token => $res) {
+                                if (isset($res['status']) && in_array($res['status'], [400, 404, 410])) {
+                                    // try to detect not found / unregistered
+                                    $reason = $res['body']['error']['message'] ?? $res['body']['error']['status'] ?? null;
+                                    DeviceToken::where('token', $token)->delete();
+                                    Log::info('Deleted invalid device token', ['token' => $token, 'reason' => $reason]);
+                                } elseif (isset($res['error']) && !isset($res['status'])) {
+                                    // network/other error - keep token and log
+                                    Log::warning('FCM send error (no status)', ['token' => $token, 'error' => $res['error']]);
+                                }
                             }
+                        } else {
+                            Log::info('No device tokens found for user', ['user_id' => $user->id]);
                         }
-                    } else {
-                        Log::info('No device tokens found for user', ['user_id' => $user->id]);
                     }
+                } catch (\Throwable $e) {
+                    Log::error('Failed to send confirmed order notification', ['error' => $e->getMessage()]);
                 }
-            } catch (\Throwable $e) {
-                Log::error('Failed to send confirmed order notification', ['error' => $e->getMessage()]);
-            }
             }
             $order->save();
 
-            if($order->total_refunded_price > 0){
+            if ($order->total_refunded_price > 0) {
                 $pa->createRefund([
                     'payment_request_id' => $order->payment_request_id,
                     'amount'             => $order->total_refunded_price,
@@ -396,11 +398,15 @@ class ApiOrderController extends Controller
             $waitingOrder = Order::where('status', 'WAITING')
                 ->oldest()   // default: created_at ASC
                 ->first();
-            
-                if($waitingOrder){
-                    $waitingOrder->status = 'ONPROGRESS';
-                    $waitingOrder->save();
-                }
+
+            if ($waitingOrder) {
+                $waitingOrder->status = 'ONPROGRESS';
+                $waitingOrder->expired_at = now()->addMinutes(2);
+                $waitingOrder->save();
+
+                ExpireOrder::dispatch($waitingOrder->id)
+                    ->delay($waitingOrder->expired_at);
+            }
 
             try {
                 $user = User::find($waitingOrder->user_id);
@@ -414,7 +420,7 @@ class ApiOrderController extends Controller
                         $fcm = app(FcmV1Service::class);
 
                         $title = "⁠It’s Your Turn to Pay";
-                        $body  = "It’s your turn to pay for order #". $order->reference_id .". Please proceed to payment.";
+                        $body  = "It’s your turn to pay for order #" . $order->reference_id . ". Please proceed to payment.";
 
                         $notification = ['title' => $title, 'body' => $body];
                         $payloadData = [
@@ -453,7 +459,7 @@ class ApiOrderController extends Controller
         ], 200);
     }
 
-    public function cancellation(Request $request,string $id)
+    public function cancellation(Request $request, string $id)
     {
         $user = $request->user();
         $order = Order::findOrFail($id);
@@ -506,7 +512,6 @@ class ApiOrderController extends Controller
             } catch (\Throwable $e) {
                 Log::error('Failed to send expired order notification', ['error' => $e->getMessage()]);
             }
-            
         } else {
             return response()->json([
                 'message' => 'Cannot cancel the order'

@@ -17,14 +17,14 @@ class ExpirePaidOrder implements ShouldQueue
 {
     use Queueable, Dispatchable, InteractsWithQueue, SerializesModels;
 
-    public $orderId;
+    public $referenceId;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($orderId)
+    public function __construct($referenceId)
     {
-        $this->orderId = $orderId;
+        $this->referenceId = $referenceId;
     }
 
     /**
@@ -32,7 +32,7 @@ class ExpirePaidOrder implements ShouldQueue
      */
     public function handle(PaymentAction $pa): void
     {
-        $order = Order::with('bakery')->find($this->orderId);
+        $order = Order::with('bakery')->find($this->referenceId,'reference_id');
         if (!$order || $order->status !== 'PAID') {
             return; // sudah dibayar / expired
         }

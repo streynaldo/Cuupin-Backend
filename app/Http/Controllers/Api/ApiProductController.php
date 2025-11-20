@@ -71,9 +71,9 @@ class ApiProductController extends Controller
             'price'          => $data['price'],
             'best_before'    => $data['best_before'] ?? null,
             'image_url'      => $imageUrl,
-            'discount_price' => $data['discount_price'] ?? null,
-            'discount_id'    => $data['discount_id'] ?? null,
-        ])->load(['bakery', 'discountEvent']);
+            'discount_price' => null,
+            'discount_id'    => null,
+        ]);
 
         return response()->json([
             'success' => true,

@@ -32,10 +32,12 @@ class ExpirePaidOrder implements ShouldQueue
      */
     public function handle(PaymentAction $pa): void
     {
+        Log::info("MASUK HANDLE EXPIRE PAID ORDER");
         $order = Order::with('bakery')->find($this->referenceId,'reference_id');
         if (!$order || $order->status !== 'PAID') {
             return; // sudah dibayar / expired
         }
+        Log::info("SAMPAI DISINI DENGAN ORDER = " . $order->reference_id);
 
         $order->total_refunded_price = $order->total_purchased_price;
         $order->total_purchased_price = 0;
@@ -48,6 +50,7 @@ class ExpirePaidOrder implements ShouldQueue
             'reason'             => "Bakery Failed To Confirm",
             'reference_id'       => $order->reference_id,
         ]);
+        Log::info("SAMPAI DISINI DENGAN ORDER BERHASIL DI REFUND = " . $order->reference_id);
         if ($res) {
             $order->status = 'CANCELLED';
             $order->save();

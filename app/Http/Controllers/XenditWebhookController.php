@@ -66,7 +66,7 @@ class XenditWebhookController extends Controller
                 $order->payment_request_id = $data['payment_request_id'];
                 $order->save();
 
-                ExpirePaidOrder::dispatch($order->id)
+                ExpirePaidOrder::dispatch($order->reference_id)
                     ->delay($order->expired_at);
 
                 Log::info('Order marked PAID', ['order_id' => $order->id, 'reference_id' => $referenceId]);

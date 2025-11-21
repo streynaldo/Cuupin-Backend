@@ -46,23 +46,23 @@ class ExpireProductDiscount implements ShouldQueue
                 $product->discount_price = null;
                 $product->save();
             }
-            $tokens = DeviceToken::join('users', 'device_tokens.user_id', '=', 'users.id')
-                ->where('users.role', 'customer')
-                ->pluck('device_tokens.token')
-                ->toArray();
+            // $tokens = DeviceToken::join('users', 'device_tokens.user_id', '=', 'users.id')
+            //     ->where('users.role', 'customer')
+            //     ->pluck('device_tokens.token')
+            //     ->toArray();
 
-            if (!empty($tokens)) {
-                $fcm = app(FcmV1Service::class);
+            // if (!empty($tokens)) {
+            //     $fcm = app(FcmV1Service::class);
 
-                $fcm->sendToTokens(
-                    $tokens,
-                    [], // kosongkan notification jika silent
-                    [
-                        'type' => 'refresh_discount',
-                        'event_id' => (string)$event->id,
-                    ]
-                );
-            }
+            //     $fcm->sendToTokens(
+            //         $tokens,
+            //         [], // kosongkan notification jika silent
+            //         [
+            //             'type' => 'refresh_discount',
+            //             'event_id' => (string)$event->id,
+            //         ]
+            //     );
+            // }
 
             Log::info("[DISCOUNT EVENT EXPIRE] SUKSES MENGGANTI STATUS");
         } else {

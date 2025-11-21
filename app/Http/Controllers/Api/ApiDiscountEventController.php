@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ExpireProductDiscount;
 use App\Models\DiscountEvent;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -47,6 +48,8 @@ class ApiDiscountEventController extends Controller
         }
 
         $row = DiscountEvent::create($data);
+
+        ExpireProductDiscount::dispatch($row->id)->delay($row->discount_end_time);
 
         return response()->json([
             'success' => true,
@@ -144,6 +147,7 @@ class ApiDiscountEventController extends Controller
                 }
             }
         }
+        ExpireProductDiscount::dispatch($row->id)->delay($row->discount_end_time);
 
         return response()->json([
             'success' => true,

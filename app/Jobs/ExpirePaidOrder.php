@@ -54,6 +54,8 @@ class ExpirePaidOrder implements ShouldQueue
                 'reference_id'       => $order->reference_id,
             ]);
 
+            Log::info("[RESULT REFUND] = " . $res);
+
             Log::info("SAMPAI DISINI DENGAN ORDER BERHASIL DI REFUND = " . $order->reference_id);
             if ($res) {
                 $order->status = 'CANCELLED';

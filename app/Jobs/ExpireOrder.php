@@ -35,25 +35,28 @@ class ExpireOrder implements ShouldQueue
         if (!$order || $order->status !== 'ONPROGRESS') {
             return; // sudah dibayar / expired
         }
+        if ($order->expired_at <= now()) {
+            $order->status = 'CANCELLED';
+            $order->save();
 
-        $order->status = 'CANCELLED';
-        $order->save();
+            // Push notif ke user
+            $tokens = DeviceToken::where('user_id', $order->user_id)
+                ->pluck('token')
+                ->toArray();
 
-        // Push notif ke user
-        $tokens = DeviceToken::where('user_id', $order->user_id)
-            ->pluck('token')
-            ->toArray();
+            if (!empty($tokens)) {
+                $fcm = app(FcmV1Service::class);
+                $fcm->sendToTokens(
+                    $tokens,
+                    ['title' => 'Order Expired', 'body' => "Your order {$order->reference_id} has expired."],
+                    ['type' => 'order_expired', 'order_id' => (string)$order->id],
+                    app('log')
+                );
+            }
 
-        if (!empty($tokens)) {
-            $fcm = app(FcmV1Service::class);
-            $fcm->sendToTokens(
-                $tokens,
-                ['title' => 'Order Expired', 'body' => "Your order {$order->id} has expired."],
-                ['type' => 'order_expired', 'order_id' => (string)$order->id],
-                app('log')
-            );
+            Log::info('Order expired via delayed job', ['order_id' => $order->id]);
+        } else {
+            Log::info("[Expire Order] Cant Change Order Status");
         }
-
-        Log::info('Order expired via delayed job', ['order_id' => $order->id]);
     }
 }

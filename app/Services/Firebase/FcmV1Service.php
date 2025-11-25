@@ -127,7 +127,7 @@ class FcmV1Service
                                 'title' => $title,
                                 'body'  => $body,
                             ],
-                            'sound' => 'default',
+                            'sound' => 'notification_sound',
                             'content-available' => 0,
                         ],
                     ],

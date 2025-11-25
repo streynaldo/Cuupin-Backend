@@ -390,7 +390,7 @@ class ApiOrderController extends Controller
                     'payment_request_id' => $order->payment_request_id,
                     'amount'             => (Int) $order->total_refunded_price,
                     'currency'           => 'IDR',
-                    'reason'             => "Partial/Full Refund",
+                    'reason'             => "CANCELLATION",
                     'reference_id'       => $order->reference_id,
                 ]);
             }

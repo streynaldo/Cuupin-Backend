@@ -50,7 +50,7 @@ class ExpirePaidOrder implements ShouldQueue
                 'payment_request_id' => $order->payment_request_id,
                 'amount'             => (int) $order->total_refunded_price,
                 'currency'           => 'IDR',
-                'reason'             => "Bakery Failed To Confirm",
+                'reason'             => "CANCELLATION",
                 'reference_id'       => $order->reference_id,
             ]);
 

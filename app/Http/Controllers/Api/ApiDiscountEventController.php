@@ -36,6 +36,17 @@ class ApiDiscountEventController extends Controller
             'bakery_id'           => ['required', 'exists:bakeries,id']
         ]);
 
+        // Cek batas maksimal 5 event per bakery
+        $existing = DiscountEvent::where('bakery_id', $data['bakery_id'])->count();
+
+        if ($existing >= 5) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot create more than 5 discount events.',
+                'data'    => []
+            ], 200);
+        }
+
         $data['discount_start_time'] = Carbon::parse($data['discount_start_time']);
         $data['discount_end_time']   = Carbon::parse($data['discount_end_time']);
 

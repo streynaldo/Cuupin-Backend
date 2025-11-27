@@ -16,8 +16,8 @@ class BakerySeeder extends Seeder
     {
         // ambil user dengan role owner
         $owner = User::where('role', 'owner')->get();
-        $owner1 = $owner->first;
-        $owner2 = $owner->last;
+        $owner1 = $owner->where('name', 'owner demo')->first();
+        $owner2 = $owner->where('name', 'owner 2 demo')->first();
 
         if (!$owner) {
             $this->command->warn('⚠️ Tidak ditemukan user dengan role "owner". Jalankan UserSeeder dulu.');

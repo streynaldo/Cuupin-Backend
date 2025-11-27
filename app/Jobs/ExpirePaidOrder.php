@@ -46,7 +46,7 @@ class ExpirePaidOrder implements ShouldQueue
         $order->save();
 
         if ($order->total_refunded_price != 0) {
-            $res = $pa->createRefund([
+            $pa->createRefund([
                 'payment_request_id' => $order->payment_request_id,
                 'amount'             => (int) $order->total_refunded_price,
                 'currency'           => 'IDR',
@@ -54,7 +54,7 @@ class ExpirePaidOrder implements ShouldQueue
                 'reference_id'       => $order->reference_id,
             ]);
 
-            Log::info("[RESULT REFUND] = " . $res);
+            // Log::info("[RESULT REFUND] = " . $res);
 
             Log::info("SAMPAI DISINI DENGAN ORDER BERHASIL DI REFUND = " . $order->reference_id);
 

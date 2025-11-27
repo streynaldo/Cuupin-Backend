@@ -17,7 +17,7 @@ class PaymentAction
             'mode'                  => "PAYMENT_LINK",
             "allowed_payment_channels" => ["OVO", "SHOPEEPAY", "DANA"],
             'country'               => "ID",
-            'expires_at'            => Carbon::now('UTC')->addMinutes(11)->format('Y-m-d\TH:i:s\Z'),
+            'expires_at'            => Carbon::now('Asia/Jakarta')->addMinutes(11)->format('Y-m-d\TH:i:s\Z'),
             'description'           => 'Pembayaran Order #' . $order['reference_id'],
         ];
 

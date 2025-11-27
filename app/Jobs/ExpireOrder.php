@@ -54,7 +54,7 @@ class ExpireOrder implements ShouldQueue
                 );
             }
 
-            Log::info('Order expired via delayed job', ['order_id' => $order->id]);
+            Log::info('[Expire Order] Order expired via delayed job', ['order_id' => $order->id]);
         } else {
             Log::info("[Expire Order] Cant Change Order Status");
         }

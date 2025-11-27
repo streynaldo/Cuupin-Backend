@@ -55,49 +55,25 @@ class Xendit
 
     public function refund(array $json)
     {
-        try {
-            $response = Http::withBasicAuth($this->key, '')
-                ->withHeaders([
-                    'api-version'       => '2024-11-11',
-                    'X-Idempotency-Key' => $json['reference_id'] ?? uniqid(),
-                ])
-                ->acceptJson()->asJson()
-                ->post($this->base . '/refunds', $json);
-    
-            // jika ada error HTTP, ->throw() akan melempar RequestException
-            return $response->throw()->json();
-        } catch (RequestException $e) {
-            $resp = $e->response;
-    
-            // Ambil body mentah penuh (string) dan juga parsed JSON kalau bisa
-            $rawBody = $resp ? $resp->body() : null;
-            $jsonBody = null;
-            try {
-                $jsonBody = $rawBody ? json_decode($rawBody, true) : null;
-            } catch (\Throwable $_) {
-                $jsonBody = null;
-            }
-    
-            // Log body lengkap sebagai string (tidak dalam array) supaya tidak dipotong
-            Log::error("[XENDIT][REFUND] HTTP error {$resp?->status()} for refund request", [
-                'payload' => $json,
+        try{
+            $res = Http::withBasicAuth($this->key, '')
+            ->withHeaders([
+                'api-version'       => '2024-11-11',
+                'X-Idempotency-Key' => $json['reference_id'] ?? uniqid(),
+            ])
+            ->acceptJson()->asJson()
+            ->post($this->base . '/refunds', $json)   // <-- endpoint benar
+            ->throw()->json();
+        }catch (RequestException $e) {
+            Log::error('HTTP Request Failed:', [
+                'status' => $e->response->status(),
+                'body' => $e->response->body(), // Log the full response body
+                'message' => $e->getMessage(),
             ]);
-            Log::error('[XENDIT][REFUND] FULL RESPONSE BODY: ' . ($rawBody ?? '<<no-body>>'));
-    
-            // Jika mau juga simpan parsed json untuk mesin analisa
-            if ($jsonBody) {
-                Log::error('[XENDIT][REFUND] PARSED JSON ERROR:', $jsonBody);
-            }
-    
-            // lempar exception baru yang memuat status + body supaya caller juga dapat info lengkap
-            $status = $resp ? $resp->status() : 'n/a';
-            $message = "Xendit refund failed: HTTP {$status} - " . ($rawBody ?? $e->getMessage());
-    
-            throw new \RuntimeException($message, $status === 'n/a' ? 0 : $status);
-        } catch (\Throwable $e) {
-            Log::error('[XENDIT][REFUND] unexpected error: '.$e->getMessage(), ['payload' => $json]);
-            throw $e; // rethrow
+            // Handle the error as needed
         }
+        return $res;
+        
     }
 
     public function balance()

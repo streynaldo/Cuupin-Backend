@@ -38,7 +38,7 @@ class DiscountEventSeeder extends Seeder
                 'discount_photo'      => 'https://example.com/yearend.jpg',
                 'discount_start_time' => Carbon::now()->addDays(10),
                 'discount_end_time'   => Carbon::now()->addDays(20),
-                'bakery_id'            => 3
+                'bakery_id'            => 2
             ],
         ];
 

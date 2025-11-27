@@ -62,7 +62,7 @@ class XenditWebhookController extends Controller
 
             if (in_array($status, ['COMPLETED', 'SUCCEEDED', 'PAID', 'CAPTURED'])) {
                 $order->status = 'PAID';
-                $order->expired_at = now()->addMinutes(3);
+                $order->expired_at = now()->addSeconds(30);
                 $order->payment_request_id = $data['payment_request_id'];
                 $order->save();
 

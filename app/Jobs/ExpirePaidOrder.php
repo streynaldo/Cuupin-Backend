@@ -46,6 +46,7 @@ class ExpirePaidOrder implements ShouldQueue
         $order->save();
 
         if ($order->total_refunded_price != 0) {
+            Log::info("[DATA REFUND] TOTAL PURCHASED = " . $order->total_purchased_price . ", TOTAL REFUND = " . $order->total_refunded_price);
             $pa->createRefund([
                 'payment_request_id' => $order->payment_request_id,
                 'amount'             => (int) $order->total_refunded_price,

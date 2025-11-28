@@ -44,6 +44,10 @@ class Bakery extends Model
         return $this->hasMany(DiscountEvent::class);
     }
 
+    public function operatinghours(){
+        return $this->hasMany(OperatingHour::class);
+    }
+
     public function orders()
     {
         return $this->hasMany(Order::class);

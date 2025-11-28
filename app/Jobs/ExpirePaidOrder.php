@@ -73,7 +73,7 @@ class ExpirePaidOrder implements ShouldQueue
                 $fcm = app(FcmV1Service::class);
                 $fcm->sendToTokens(
                     $tokens,
-                    ['title' => 'Order Cancelled', 'body' => "You failed to confirm order #{$order->id}."],
+                    ['title' => 'Order Cancelled', 'body' => "You failed to confirm order #{$order->reference_id}."],
                     ['type' => 'order_cancelled', 'order_id' => (string)$order->id],
                     app('log')
                 );

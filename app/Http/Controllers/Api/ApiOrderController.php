@@ -15,6 +15,8 @@ use App\Models\BakeryWallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Jobs\AutoCompleteOrder;
+use App\Models\OperatingHour;
 use App\Services\Firebase\FcmV1Service;
 
 class ApiOrderController extends Controller
@@ -255,6 +257,11 @@ class ApiOrderController extends Controller
                 if ($item->status == 'WAITING') {
                     // TAMBAH CHECKER KALO PRODUK TERNYATA SUDAH HABIS
                     $product = Product::findOrFail($item->product_id);
+                    $day = now()->dayOfWeekIso; // 1 = Monday ... 7 = Sunday
+
+                    $ophour = OperatingHour::where('bakery_id', $order->bakery_id)
+                        ->where('day_of_the_week', $day)
+                        ->first();
                     foreach ($validated['items'] as $updatedItems) {
                         // dd($updatedItems['quantity']);
                         if ($item->id == $updatedItems['id']) {
@@ -287,6 +294,11 @@ class ApiOrderController extends Controller
                                 }
                             }
                         }
+                    }
+                    if (!$canceled) {
+                        $closeAt = now()->setTimeFromTimeString($ophour->close_time);
+                        AutoCompleteOrder::dispatch($order->reference_id)
+                            ->delay($closeAt);
                     }
                 }
             }
@@ -339,6 +351,11 @@ class ApiOrderController extends Controller
                 }
             } else {
                 $order->status = 'CONFIRMED';
+                $day = now()->dayOfWeekIso; // 1 = Monday ... 7 = Sunday
+
+                $ophour = OperatingHour::where('bakery_id', $order->bakery_id)
+                    ->where('day_of_the_week', $day)
+                    ->first();
                 try {
                     $user = User::find($order->user_id);
                     if ($user) {
@@ -378,6 +395,10 @@ class ApiOrderController extends Controller
                         } else {
                             Log::info('No device tokens found for user', ['user_id' => $user->id]);
                         }
+                        $closeAt = now()->setTimeFromTimeString($ophour->close_time);
+
+                        AutoCompleteOrder::dispatch($order->reference_id)
+                            ->delay($closeAt);
                     }
                 } catch (\Throwable $e) {
                     Log::error('Failed to send confirmed order notification', ['error' => $e->getMessage()]);
@@ -388,7 +409,7 @@ class ApiOrderController extends Controller
             if ($order->total_refunded_price > 0) {
                 $pa->createRefund([
                     'payment_request_id' => $order->payment_request_id,
-                    'amount'             => (Int) $order->total_refunded_price,
+                    'amount'             => (int) $order->total_refunded_price,
                     'currency'           => 'IDR',
                     'reason'             => "CANCELLATION",
                     'reference_id'       => $order->reference_id,

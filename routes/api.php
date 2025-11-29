@@ -161,6 +161,7 @@ Route::prefix('v1')->group(function () {
 
     // other protected
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/auth/verify-password', [AuthController::class, 'verifyPassword']);
         Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
         Route::delete('/device-tokens', [DeviceTokenController::class, 'destroy']);
         Route::put('/auth/user', [AuthController::class, 'update']);

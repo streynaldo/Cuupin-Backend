@@ -119,6 +119,31 @@ class AuthController extends Controller
         ], 200);
     }
 
+    public function verifyPassword(Request $request)
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $data = $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        if (! Hash::check($data['password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid password.',
+            ], 403);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password verified.',
+        ], 200);
+    }
+
     public function update(Request $request)
     {
         $user = $request->user();

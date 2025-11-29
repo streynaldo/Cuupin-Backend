@@ -36,7 +36,7 @@ class ExpireOrder implements ShouldQueue
             return; // sudah dibayar / expired
         }
         if ($order->expired_at <= now()) {
-            $order->status = 'CANCELLED';
+            $order->status = 'CANCELLED:UNPAID';
             $order->save();
 
             // Push notif ke user
